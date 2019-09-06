@@ -1,5 +1,6 @@
 import scipy.io
 import matplotlib.pyplot as plt
+import numpy as np
 import os
 
 
@@ -22,33 +23,56 @@ class NaiveBayesClassifier:
 
     def load_data(self):
         print ("Load data")
-        test_0_image = scipy.io.loadmat (self.__data_path + "/test_0_img")
-        test_0_lebel = scipy.io.loadmat (self.__data_path + "/test_0_label")
-        test_1_image = scipy.io.loadmat (self.__data_path + "/test_1_img")
-        test_1_label = scipy.io.loadmat (self.__data_path + "/test_1_label")
+        self.__test_0_image = scipy.io.loadmat (self.__data_path + "/test_0_img")
+        self.__test_0_lebel = scipy.io.loadmat (self.__data_path + "/test_0_label")
+        self.__test_1_image = scipy.io.loadmat (self.__data_path + "/test_1_img")
+        self.__test_1_label = scipy.io.loadmat (self.__data_path + "/test_1_label")
 
-        train_0_image = scipy.io.loadmat (self.__data_path + "/train_0_img")
-        train_0_lebel = scipy.io.loadmat (self.__data_path + "/train_0_label")
-        train_1_image = scipy.io.loadmat (self.__data_path + "/train_1_img")
-        train_1_label = scipy.io.loadmat (self.__data_path + "/train_1_label")
+        self.__train_0_image = scipy.io.loadmat (self.__data_path + "/train_0_img")
+        self.__train_0_lebel = scipy.io.loadmat (self.__data_path + "/train_0_label")
+        self.__train_1_image = scipy.io.loadmat (self.__data_path + "/train_1_img")
+        self.__train_1_label = scipy.io.loadmat (self.__data_path + "/train_1_label")
 
-        print (test_0_image['target_img'].mean())
+        # shape the image data (rool the axis)        
+        self.__test_0_image['target_img'] = np.rollaxis(self.__test_0_image['target_img'],-1)
+        self.__test_1_image['target_img'] = np.rollaxis(self.__test_1_image['target_img'],-1)
+        self.__train_0_image['target_img'] = np.rollaxis(self.__train_0_image['target_img'],-1)
+        self.__train_1_image['target_img'] = np.rollaxis(self.__train_1_image['target_img'],-1)
+
+        # calculate the mean of each Image
+        self.test_0_mean = self.__test_0_image['target_img'].mean(axis=(1,2),keepdims=True,dtype=np.float64)
+        self.test_1_mean = self.__test_1_image['target_img'].mean(axis=(1,2),keepdims=True,dtype=np.float64)
+        self.train_0_mean = self.__train_0_image['target_img'].mean(axis=(1,2),keepdims=True,dtype=np.float64)
+        self.train_1_mean = self.__train_1_image['target_img'].mean(axis=(1,2),keepdims=True,dtype=np.float64)
+
+        # make sure I have the right dims
+        print (self.test_0_mean.shape)
+        print (self.test_1_mean.shape)
+
+        print (self.train_0_mean.shape)
+        print (self.train_1_mean.shape)
+
+
+        # 
         # target_lable
         # target_image
         # numpy.ndarray
         if (True == self.__print_data_dim):
-            print ("test_0_image : " + str((test_0_image['target_img'].shape)))
-            print ("test_0_lebel : " + str((test_0_lebel['target_label'].shape)))
-            print ("test_1_image : " + str((test_1_image['target_img'].shape)))
-            print ("test_1_label : " + str((test_1_label['target_label'].shape)))
+            #@todo - remove before submitting
+            print ("test_0_image : " + str((self.__test_0_image['target_img'].shape)))
+            print ("test_0_lebel : " + str((self.__test_0_lebel['target_label'].shape)))
+            print ("test_1_image : " + str((self.__test_1_image['target_img'].shape)))
+            print ("test_1_label : " + str((self.__test_1_label['target_label'].shape)))
 
-            print ("train_0_image : " + str((train_0_image['target_img'].shape)))
-            print ("train_0_lebel : " + str((train_0_lebel['target_label'].shape)))
-            print ("train_1_image : " + str((train_1_image['target_img'].shape)))
-            print ("train_1_label : " + str((train_1_label['target_label'].shape)))
+            print ("train_0_image : " + str((self.__train_0_image['target_img'].shape)))
+            print ("train_0_lebel : " + str((self.__train_0_lebel['target_label'].shape)))
+            print ("train_1_image : " + str((self.__train_1_image['target_img'].shape)))
+            print ("train_1_label : " + str((self.__train_1_label['target_label'].shape)))
+
 
     def train(self):
-        #print (test_0_image['target_img'].mean())
+        
+
         # calc and save the mean (feature vector 1)
         # calc and save the variance (feature vector 2)
         print ("train")
