@@ -74,41 +74,41 @@ class NaiveBayesClassifier:
     def extract_features(self):
         print ("extract features")
         # First feature X1 : pixel intensity mean value
-        self.__test_0_mean = self.__test_0_image['target_img'].mean(axis=(1,2),keepdims=True,dtype=np.float64)
-        self.__test_1_mean = self.__test_1_image['target_img'].mean(axis=(1,2),keepdims=True,dtype=np.float64)
+        self.__test_0_mean_feature_x1 = self.__test_0_image['target_img'].mean(axis=(1,2),keepdims=True,dtype=np.float64)
+        self.__test_1_mean_feature_x1 = self.__test_1_image['target_img'].mean(axis=(1,2),keepdims=True,dtype=np.float64)
         self.__train_0_mean = self.__train_0_image['target_img'].mean(axis=(1,2),keepdims=True,dtype=np.float64)
         self.__train_1_mean = self.__train_1_image['target_img'].mean(axis=(1,2),keepdims=True,dtype=np.float64)
 
         # Second feature X2 : avarage of varaiance of each row
         # Calc the variance
-        self.__test_0_variance = self.__test_0_image['target_img'].var(axis=2, dtype=np.float64)
-        self.__test_1_variance = self.__test_1_image['target_img'].var(axis=2, dtype=np.float64)
+        self.__test_0_variance_feature_x2 = self.__test_0_image['target_img'].var(axis=2, dtype=np.float64)
+        self.__test_1_variance_feature_x2 = self.__test_1_image['target_img'].var(axis=2, dtype=np.float64)
         self.__train_0_variance = self.__train_0_image['target_img'].var(axis=2, dtype=np.float64)
         self.__train_1_variance = self.__train_1_image['target_img'].var(axis=2, dtype=np.float64)
 
         # Avarage the variance
-        self.__test_0_variance  = np.average(self.__test_0_variance ,axis=1)
-        self.__test_1_variance  = np.average(self.__test_1_variance ,axis=1)
+        self.__test_0_variance_feature_x2  = np.average(self.__test_0_variance_feature_x2 ,axis=1)
+        self.__test_1_variance_feature_x2  = np.average(self.__test_1_variance_feature_x2 ,axis=1)
         self.__train_0_variance  = np.average(self.__train_0_variance ,axis=1)
         self.__train_1_variance  = np.average(self.__train_1_variance ,axis=1)
 
         # for debug. make sure matrix dims are correct.
         if (True == self.__print_dims):
             print ("******Mean dims*******")
-            print (self.__test_0_mean.shape)
-            print (self.__test_1_mean.shape)
+            print (self.__test_0_mean_feature_x1.shape)
+            print (self.__test_1_mean_feature_x1.shape)
             print (self.__train_0_mean.shape)
             print (self.__train_1_mean.shape)
             
             print ("******Variance dims********")
-            print (self.__test_0_variance.shape)
-            print (self.__test_1_variance.shape)
+            print (self.__test_0_variance_feature_x2.shape)
+            print (self.__test_1_variance_feature_x2.shape)
             print (self.__train_0_variance.shape)
             print (self.__train_1_variance.shape)
 
             print ("******Avarage variance dims**********")
-            print (self.__test_0_variance.shape)
-            print (self.__test_1_variance.shape)
+            print (self.__test_0_variance_feature_x2.shape)
+            print (self.__test_1_variance_feature_x2.shape)
             print (self.__train_0_variance.shape)
             print (self.__train_1_variance.shape)
 
@@ -169,27 +169,38 @@ class NaiveBayesClassifier:
         
         # test digit 0
         # P(X1|y=0)
-        x1_pdf_digit_0 = self.calc_pdf(self.__test_0_mean,self.__train0_meu_1_hat,self.__train0_variance_1_hat)
+        x1_pdf_digit_0 = self.calc_pdf(self.__test_0_mean_feature_x1,self.__train0_meu_1_hat,self.__train0_variance_1_hat)
         # P(X2|y=0) 
-        x2_pdf_digit_0 = self.calc_pdf(self.__test_0_variance,self.__train0_meu_2_hat,self.__train0_variance_2_hat)
+        x2_pdf_digit_0 = self.calc_pdf(self.__test_0_variance_feature_x2,self.__train0_meu_2_hat,self.__train0_variance_2_hat)
 
         # P(X1|y=1)
-        x1_pdf_digit_0_ = self.calc_pdf(self.__test_0_mean,self.__train1_meu_1_hat,self.__train1_variance_1_hat)
+        x1_pdf_digit_0_ = self.calc_pdf(self.__test_0_mean_feature_x1,self.__train1_meu_1_hat,self.__train1_variance_1_hat)
         # P(X2|y=1)
-        x2_pdf_digit_0_ = self.calc_pdf(self.__test_0_variance,self.__train1_meu_2_hat,self.__train1_variance_2_hat)
+        x2_pdf_digit_0_ = self.calc_pdf(self.__test_0_variance_feature_x2,self.__train1_meu_2_hat,self.__train1_variance_2_hat)
 
+        x1_pdf_digit_0 = x1_pdf_digit_0.reshape(-1)
+        x1_pdf_digit_0_ = x1_pdf_digit_0_.reshape(-1)
+
+        pp = np.multiply(x1_pdf_digit_0 , x2_pdf_digit_0)
+        pp2 = np.multiply(x1_pdf_digit_0_ , x2_pdf_digit_0_)
+
+        print (pp.shape, pp2.shape)
 
         # test digit 1
-        x1_pdf_digit_1 = self.calc_pdf(self.__test_1_mean,self.__train0_meu_1_hat,self.__train0_variance_1_hat)
+        x1_pdf_digit_1 = self.calc_pdf(self.__test_1_mean_feature_x1,self.__train0_meu_1_hat,self.__train0_variance_1_hat)
         # P(X2|y=0) 
-        x2_pdf_digit_1 = self.calc_pdf(self.__test_1_variance,self.__train0_meu_2_hat,self.__train0_variance_2_hat)
+        x2_pdf_digit_1 = self.calc_pdf(self.__test_1_variance_feature_x2,self.__train0_meu_2_hat,self.__train0_variance_2_hat)
 
         # P(X1|y=1)
-        x1_pdf_digit_1_ = self.calc_pdf(self.__test_1_mean,self.__train1_meu_1_hat,self.__train1_variance_1_hat)
+        x1_pdf_digit_1_ = self.calc_pdf(self.__test_1_mean_feature_x1,self.__train1_meu_1_hat,self.__train1_variance_1_hat)
         # P(X2|y=1)
-        x2_pdf_digit_1_ = self.calc_pdf(self.__test_1_variance,self.__train1_meu_2_hat,self.__train1_variance_2_hat)
+        x2_pdf_digit_1_ = self.calc_pdf(self.__test_1_variance_feature_x2,self.__train1_meu_2_hat,self.__train1_variance_2_hat)
         
-        if (True == self.__print_dims):
+        x1_pdf_digit_1 = x1_pdf_digit_1.reshape(-1)
+        x1_pdf_digit_1_ = x1_pdf_digit_1_.reshape(-1)
+
+        #if (True == self.__print_dims):
+        if (True):
             print(x1_pdf_digit_0.shape, x2_pdf_digit_0.shape, x1_pdf_digit_0_.shape, x2_pdf_digit_0_.shape)
             print(x1_pdf_digit_1.shape, x2_pdf_digit_1.shape, x1_pdf_digit_1_.shape, x2_pdf_digit_1_.shape)
     
