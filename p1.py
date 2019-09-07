@@ -76,41 +76,41 @@ class NaiveBayesClassifier:
         # First feature X1 : pixel intensity mean value
         self.__test_0_mean_feature_x1 = self.__test_0_image['target_img'].mean(axis=(1,2),keepdims=True,dtype=np.float64)
         self.__test_1_mean_feature_x1 = self.__test_1_image['target_img'].mean(axis=(1,2),keepdims=True,dtype=np.float64)
-        self.__train_0_mean = self.__train_0_image['target_img'].mean(axis=(1,2),keepdims=True,dtype=np.float64)
-        self.__train_1_mean = self.__train_1_image['target_img'].mean(axis=(1,2),keepdims=True,dtype=np.float64)
+        self.__train_0_mean_feature_x1 = self.__train_0_image['target_img'].mean(axis=(1,2),keepdims=True,dtype=np.float64)
+        self.__train_1_mean_feature_x1 = self.__train_1_image['target_img'].mean(axis=(1,2),keepdims=True,dtype=np.float64)
 
         # Second feature X2 : avarage of varaiance of each row
         # Calc the variance
         self.__test_0_variance_feature_x2 = self.__test_0_image['target_img'].var(axis=2, dtype=np.float64)
         self.__test_1_variance_feature_x2 = self.__test_1_image['target_img'].var(axis=2, dtype=np.float64)
-        self.__train_0_variance = self.__train_0_image['target_img'].var(axis=2, dtype=np.float64)
-        self.__train_1_variance = self.__train_1_image['target_img'].var(axis=2, dtype=np.float64)
+        self.__train_0_variance_feature_x2 = self.__train_0_image['target_img'].var(axis=2, ddof=0, dtype=np.float64)
+        self.__train_1_variance_feature_x2 = self.__train_1_image['target_img'].var(axis=2, ddof=0, dtype=np.float64)
 
         # Avarage the variance
         self.__test_0_variance_feature_x2  = np.average(self.__test_0_variance_feature_x2 ,axis=1)
         self.__test_1_variance_feature_x2  = np.average(self.__test_1_variance_feature_x2 ,axis=1)
-        self.__train_0_variance  = np.average(self.__train_0_variance ,axis=1)
-        self.__train_1_variance  = np.average(self.__train_1_variance ,axis=1)
+        self.__train_0_variance_feature_x2  = np.average(self.__train_0_variance_feature_x2 ,axis=1)
+        self.__train_1_variance_feature_x2  = np.average(self.__train_1_variance_feature_x2 ,axis=1)
 
         # for debug. make sure matrix dims are correct.
         if (True == self.__print_dims):
             print ("******Mean dims*******")
             print (self.__test_0_mean_feature_x1.shape)
             print (self.__test_1_mean_feature_x1.shape)
-            print (self.__train_0_mean.shape)
-            print (self.__train_1_mean.shape)
+            print (self.__train_0_mean_feature_x1.shape)
+            print (self.__train_1_mean_feature_x1.shape)
             
             print ("******Variance dims********")
             print (self.__test_0_variance_feature_x2.shape)
             print (self.__test_1_variance_feature_x2.shape)
-            print (self.__train_0_variance.shape)
-            print (self.__train_1_variance.shape)
+            print (self.__train_0_variance_feature_x2.shape)
+            print (self.__train_1_variance_feature_x2.shape)
 
             print ("******Avarage variance dims**********")
             print (self.__test_0_variance_feature_x2.shape)
             print (self.__test_1_variance_feature_x2.shape)
-            print (self.__train_0_variance.shape)
-            print (self.__train_1_variance.shape)
+            print (self.__train_0_variance_feature_x2.shape)
+            print (self.__train_1_variance_feature_x2.shape)
 
 
     # show gray scale image
@@ -129,18 +129,24 @@ class NaiveBayesClassifier:
 
     # Features are drwan from gaussian pdf. using the mean and variane (calculated from previous steps. the MLE estimator)
     # we can calculate the conditional probability 
-    def calc_pdf(self,X,mean,var):
-        exponent = np.exp(-(np.power(X - mean, 2) / (2 * np.power(var, 2))))
-        val = 1 / (math.sqrt(2 * math.pi) * var) * exponent       
+    def calc_pdf(self,type, X,mean,var):
+        if (type == 'Gaussian'):
+            exponent = np.exp(-(np.power(X - mean, 2) / (2 * np.power(var, 2))))
+            val = exponent / (np.sqrt(2 * math.pi * np.power(var, 2)))            
+        elif(type == "Log"):
+            print ("Calc log lokelihood")
+            val = ((np.log(1/(var * np.sqrt(2*math.pi)))) - (np.power(X-mean,2)/(2*np.power(var,2))))
+
         return val
 
     #This function gets the fetaure vector as input and return the MLE parameters: mean and variance
     def get_mle(self,X1,X2):
         print ("get MLE")
         meu_1_hat = np.average(X1)
-        variance_1_hat = np.var(X1) 
+        variance_1_hat = np.var(X1,ddof=0)
+
         meu_2_hat = np.average(X2)
-        variance_2_hat = np.var(X2) 
+        variance_2_hat = np.var(X2, ddof=0)
         return meu_1_hat,variance_1_hat, meu_2_hat, variance_2_hat
 
     # get the prior probabilities and MLE parameter estimators using the training data sets for digit 0 and digit 1
@@ -151,8 +157,8 @@ class NaiveBayesClassifier:
         self.__P_digit_equal_to_0 = self.calc_prior_probabilities("1")
         self.__P_digit_equal_to_1 = self.calc_prior_probabilities("0")
         # get MLE parameters for each feature and digit (we have 2 features ,2 digit and 2 MLE parameters so in totoal we have 8 parameters)
-        self.__train0_meu_1_hat, self.__train0_variance_1_hat, self.__train0_meu_2_hat, self.__train0_variance_2_hat= self.get_mle(self.__train_0_mean, self.__train_0_variance)
-        self.__train1_meu_1_hat, self.__train1_variance_1_hat, self.__train1_meu_2_hat, self.__train1_variance_2_hat = self.get_mle(self.__train_1_mean, self.__train_1_variance)
+        self.__train0_meu_1_hat, self.__train0_variance_1_hat, self.__train0_meu_2_hat, self.__train0_variance_2_hat = self.get_mle(self.__train_0_mean_feature_x1, self.__train_0_variance_feature_x2)
+        self.__train1_meu_1_hat, self.__train1_variance_1_hat, self.__train1_meu_2_hat, self.__train1_variance_2_hat = self.get_mle(self.__train_1_mean_feature_x1, self.__train_1_variance_feature_x2)
         
         print (self.__train0_meu_1_hat,self.__train0_variance_1_hat, self.__train0_meu_2_hat, self.__train0_variance_2_hat)
         print (self.__train1_meu_1_hat, self.__train1_variance_1_hat, self.__train1_meu_2_hat, self.__train1_variance_2_hat) 
@@ -167,40 +173,64 @@ class NaiveBayesClassifier:
         # P(X1|y=1)*P(X2|y=1)
         # prior probabilities are the same for P(y=0) and P(y=1).Therefor they can be ignored
         
+        calc_mode = "Gaussian"
         # test digit 0
         # P(X1|y=0)
-        x1_pdf_digit_0 = self.calc_pdf(self.__test_0_mean_feature_x1,self.__train0_meu_1_hat,self.__train0_variance_1_hat)
+        x1_pdf_digit_0 = self.calc_pdf(calc_mode,self.__test_0_mean_feature_x1,self.__train0_meu_1_hat,self.__train0_variance_1_hat)
         # P(X2|y=0) 
-        x2_pdf_digit_0 = self.calc_pdf(self.__test_0_variance_feature_x2,self.__train0_meu_2_hat,self.__train0_variance_2_hat)
+        x2_pdf_digit_0 = self.calc_pdf(calc_mode,self.__test_0_variance_feature_x2,self.__train0_meu_2_hat,self.__train0_variance_2_hat)
 
         # P(X1|y=1)
-        x1_pdf_digit_0_ = self.calc_pdf(self.__test_0_mean_feature_x1,self.__train1_meu_1_hat,self.__train1_variance_1_hat)
+        x1_pdf_digit_0_ = self.calc_pdf(calc_mode,self.__test_0_mean_feature_x1,self.__train1_meu_1_hat,self.__train1_variance_1_hat)
         # P(X2|y=1)
-        x2_pdf_digit_0_ = self.calc_pdf(self.__test_0_variance_feature_x2,self.__train1_meu_2_hat,self.__train1_variance_2_hat)
+        x2_pdf_digit_0_ = self.calc_pdf(calc_mode, self.__test_0_variance_feature_x2,self.__train1_meu_2_hat,self.__train1_variance_2_hat)
 
         x1_pdf_digit_0 = x1_pdf_digit_0.reshape(-1)
         x1_pdf_digit_0_ = x1_pdf_digit_0_.reshape(-1)
 
-        pp = np.multiply(x1_pdf_digit_0 , x2_pdf_digit_0)
-        pp2 = np.multiply(x1_pdf_digit_0_ , x2_pdf_digit_0_)
+        if (calc_mode == 'Gaussian'):
+            joint_p1 = np.multiply(x1_pdf_digit_0 , x2_pdf_digit_0)
+            joint_p2 = np.multiply(x1_pdf_digit_0_ , x2_pdf_digit_0_)
+        elif (calc_mode == "Log"):
+            joint_p1 = np.add(x1_pdf_digit_0 , x2_pdf_digit_0)
+            joint_p2 = np.add(x1_pdf_digit_0_ , x2_pdf_digit_0_)
 
-        print (pp.shape, pp2.shape)
+        diff = np.greater(joint_p1,joint_p2)
+        
+        print(self.__test_0_mean_feature_x1.size)
+        print ("***************************************************************")
+        print ("Number of 0 labeled digits recognized as 1 is : " , np.sum(diff))
+        print ("***************************************************************")
 
         # test digit 1
-        x1_pdf_digit_1 = self.calc_pdf(self.__test_1_mean_feature_x1,self.__train0_meu_1_hat,self.__train0_variance_1_hat)
+        x1_pdf_digit_1 = self.calc_pdf(calc_mode,self.__test_1_mean_feature_x1,self.__train0_meu_1_hat,self.__train0_variance_1_hat)
         # P(X2|y=0) 
-        x2_pdf_digit_1 = self.calc_pdf(self.__test_1_variance_feature_x2,self.__train0_meu_2_hat,self.__train0_variance_2_hat)
+        x2_pdf_digit_1 = self.calc_pdf(calc_mode,self.__test_1_variance_feature_x2,self.__train0_meu_2_hat,self.__train0_variance_2_hat)
 
         # P(X1|y=1)
-        x1_pdf_digit_1_ = self.calc_pdf(self.__test_1_mean_feature_x1,self.__train1_meu_1_hat,self.__train1_variance_1_hat)
+        x1_pdf_digit_1_ = self.calc_pdf(calc_mode,self.__test_1_mean_feature_x1,self.__train1_meu_1_hat,self.__train1_variance_1_hat)
         # P(X2|y=1)
-        x2_pdf_digit_1_ = self.calc_pdf(self.__test_1_variance_feature_x2,self.__train1_meu_2_hat,self.__train1_variance_2_hat)
+        x2_pdf_digit_1_ = self.calc_pdf(calc_mode,self.__test_1_variance_feature_x2,self.__train1_meu_2_hat,self.__train1_variance_2_hat)
         
         x1_pdf_digit_1 = x1_pdf_digit_1.reshape(-1)
         x1_pdf_digit_1_ = x1_pdf_digit_1_.reshape(-1)
 
-        #if (True == self.__print_dims):
-        if (True):
+        if (calc_mode == 'Gaussian'):
+            joint_p1 = np.multiply(x1_pdf_digit_1 , x2_pdf_digit_1)
+            joint_p2 = np.multiply(x1_pdf_digit_1_ , x2_pdf_digit_1_)
+        elif (calc_mode == "Log"):
+            joint_p1 = np.add(x1_pdf_digit_1 , x2_pdf_digit_1)
+            joint_p2 = np.add(x1_pdf_digit_1_ , x2_pdf_digit_1_)
+
+
+        diff = np.greater(joint_p1,joint_p2)
+
+        #print(self.__test_0_mean_feature_x1.size)
+        print ("***************************************************************")
+        print ("Number of 1 labeled digits recognized as 0 is : " , np.sum(diff))
+        print ("***************************************************************")
+
+        if (True == self.__print_dims):
             print(x1_pdf_digit_0.shape, x2_pdf_digit_0.shape, x1_pdf_digit_0_.shape, x2_pdf_digit_0_.shape)
             print(x1_pdf_digit_1.shape, x2_pdf_digit_1.shape, x1_pdf_digit_1_.shape, x2_pdf_digit_1_.shape)
     
