@@ -9,7 +9,6 @@ class NaiveBayesClassifier:
     def __init__(self, data_dir_path=None):
         self.__data_dir_path = data_dir_path 
         self.__data_file_list = ["test_0_img.mat", "test_0_label.mat", "test_1_img.mat", "test_1_label.mat", "train_0_img.mat", "train_0_label.mat", "train_1_img.mat", "train_1_label.mat"]
-        self.__print_data_dim = True
 
         if (data_dir_path is None):
             # assume data dir is in the current directory
@@ -39,36 +38,61 @@ class NaiveBayesClassifier:
         self.__train_0_image['target_img'] = np.rollaxis(self.__train_0_image['target_img'],-1)
         self.__train_1_image['target_img'] = np.rollaxis(self.__train_1_image['target_img'],-1)
 
-        # calculate the mean of each Image
+        print ("******Data dims*******")
+        print (self.__train_0_image['target_img'] .shape)
+        print (self.__test_1_image['target_img'] .shape)
+        print (self.__train_0_image['target_img'] .shape)
+        print (self.__train_1_image['target_img'] .shape)
+
+        # calculate the mean of each Image,move to function, late create a dictionary to sotre the mean and variance        
         self.test_0_mean = self.__test_0_image['target_img'].mean(axis=(1,2),keepdims=True,dtype=np.float64)
         self.test_1_mean = self.__test_1_image['target_img'].mean(axis=(1,2),keepdims=True,dtype=np.float64)
         self.train_0_mean = self.__train_0_image['target_img'].mean(axis=(1,2),keepdims=True,dtype=np.float64)
         self.train_1_mean = self.__train_1_image['target_img'].mean(axis=(1,2),keepdims=True,dtype=np.float64)
 
         # make sure I have the right dims
+        print ("******Mean dims*******")
         print (self.test_0_mean.shape)
         print (self.test_1_mean.shape)
-
         print (self.train_0_mean.shape)
         print (self.train_1_mean.shape)
 
 
-        # 
-        # target_lable
-        # target_image
-        # numpy.ndarray
-        if (True == self.__print_data_dim):
-            #@todo - remove before submitting
-            print ("test_0_image : " + str((self.__test_0_image['target_img'].shape)))
-            print ("test_0_lebel : " + str((self.__test_0_lebel['target_label'].shape)))
-            print ("test_1_image : " + str((self.__test_1_image['target_img'].shape)))
-            print ("test_1_label : " + str((self.__test_1_label['target_label'].shape)))
+        # calculate the variance of each column and avarage it. should be a function that gets a vector and returs and variance vector
+        # need to think about the matrix dims
+        self.__test_0_variance = self.__test_0_image['target_img'].var(axis=2, dtype=np.float64)
+        self.__test_1_variance = self.__test_1_image['target_img'].var(axis=2, dtype=np.float64)
+        self.__train_0_variance = self.__train_0_image['target_img'].var(axis=2, dtype=np.float64)
+        self.__train_1_variance = self.__train_1_image['target_img'].var(axis=2, dtype=np.float64)
 
-            print ("train_0_image : " + str((self.__train_0_image['target_img'].shape)))
-            print ("train_0_lebel : " + str((self.__train_0_lebel['target_label'].shape)))
-            print ("train_1_image : " + str((self.__train_1_image['target_img'].shape)))
-            print ("train_1_label : " + str((self.__train_1_label['target_label'].shape)))
+        # check dims. remove later
+        print ("******Variance dims********")
+        print (self.__test_0_variance.shape)
+        print (self.__test_1_variance.shape)
+        print (self.__train_0_variance.shape)
+        print (self.__train_1_variance.shape)
 
+        # avarage the variance
+        self.__test_0_variance  = np.average(self.__test_0_variance ,axis=1)
+        self.__test_1_variance  = np.average(self.__test_1_variance ,axis=1)
+        self.__train_0_variance  = np.average(self.__train_0_variance ,axis=1)
+        self.__train_1_variance  = np.average(self.__train_1_variance ,axis=1)
+
+        # Check dims after avarage calc. remove later
+        print ("******Avarage variance dims**********")
+        print (self.__test_0_variance.shape)
+        print (self.__test_1_variance.shape)
+        print (self.__train_0_variance.shape)
+        print (self.__train_1_variance.shape)
+
+
+    def calc_mean(self,X):
+        print ("Calculate mean")
+        return X.mean(axis(1,2), keepdims=True, dtype=np.float64)
+
+    def calc_avarage_row_varaince(self,X):
+        print ("Calculate avarage variance of each row ")
+        return np.average(X ,axis=1,dtype=np.float64)
 
     def train(self):
         
