@@ -117,17 +117,21 @@ class NaiveBayesClassifier:
             return 0.5
 
     def calc_pdf(self,X,mean,var):
-        print (X.shape)
-        #exponent = math.exp(-(math.pow(X - mean, 2) / (2 * math.pow(var, 2))))
-        #val = 1 / (math.sqrt(2 * math.pi) * var) * exponent
-        return 1
+        exponent = np.exp(-(np.power(X - mean, 2) / (2 * np.power(var, 2))))
+        val = 1 / (math.sqrt(2 * math.pi) * var) * exponent       
+        #print (val.shape)
+        #plt.plot(val[:])
+        #plt.show()
+        return val
 
     #This function gets the fetaure vector as input and return the MLE parameters: mean and variance
-    def get_mle(self,X):
+    def get_mle(self,X1,X2):
         print ("get MLE")
-        meu_hat = np.average(X)
-        variance_hat = np.var(X) 
-        return meu_hat,variance_hat
+        meu_1_hat = np.average(X1)
+        variance_1_hat = np.var(X1) 
+        meu_2_hat = np.average(X2)
+        variance_2_hat = np.var(X2) 
+        return meu_1_hat,variance_1_hat, meu_2_hat, variance_2_hat
 
 
     def train(self):
@@ -139,28 +143,44 @@ class NaiveBayesClassifier:
         # 5. calc probability
         P_digit_equal_to_0 = self.calc_prior_probabilities("1")
         P_digit_equal_to_1 = self.calc_prior_probabilities("0")
-        mean_0_hat, variance_0_hat = self.get_mle(self.__test_0_mean)
-        mean_1_hat, variance_1_hat = self.get_mle(self.__test_1_mean)
-        print (mean_0_hat,variance_0_hat)
-        print (mean_1_hat, variance_1_hat)
+        self.__train0_meu_1_hat, self.__train0_variance_1_hat, self.__train0_meu_2_hat, self.__train0_variance_2_hat= self.get_mle(self.__train_0_mean, self.__train_0_variance)
+        self.__train1_meu_1_hat, self.__train1_variance_1_hat, self.__train1_meu_2_hat, self.__train1_variance_2_hat = self.get_mle(self.__train_1_mean, self.__train_1_variance)
+        print (self.__train0_meu_1_hat,self.__train0_variance_1_hat, self.__train0_meu_2_hat, self.__train0_variance_2_hat)
+        print (self.__train1_meu_1_hat, self.__train1_variance_1_hat, self.__train1_meu_2_hat, self.__train1_variance_2_hat) 
+
+    def test(self):
+        print ("test")
         # (assume iid) 
         # P(X1|y=0)*P(X2|y=0) 
         # P(X1|y=1)*P(X2|y=1)
         # prior probabilities are the same for P(y=0) and P(y=1).Therefor they can be ignored
-
+        
+        # test digit 0
         # P(X1|y=0)
-        self.calc_pdf(self.__test_0_mean,mean_0_hat,variance_0_hat)
+        x1_pdf_digit_0 = self.calc_pdf(self.__test_0_mean,self.__train0_meu_1_hat,self.__train0_variance_1_hat)
         # P(X2|y=0) 
-        #self.calc_pdf(self.__test_0_variance,mean_0_hat,variance_0_hat)
+        x2_pdf_digit_0 = self.calc_pdf(self.__test_0_variance,self.__train0_meu_2_hat,self.__train0_variance_2_hat)
 
         # P(X1|y=1)
-        #self.calc_pdf(self.__test_1_mean,mean_1_hat,variance_1_hat)
+        x1_pdf_digit_0_ = self.calc_pdf(self.__test_0_mean,self.__train1_meu_1_hat,self.__train1_variance_1_hat)
         # P(X2|y=1)
-        #self.calc_pdf(self.__test_1_variance,mean_0_hat,variance_0_hat)
+        x2_pdf_digit_0_ = self.calc_pdf(self.__test_0_variance,self.__train1_meu_2_hat,self.__train1_variance_2_hat)
 
 
-    def test(self):
-        print ("classify")
+
+        # test digit 1
+        x1_pdf_digit_1 = self.calc_pdf(self.__test_1_mean,self.__train0_meu_1_hat,self.__train0_variance_1_hat)
+        # P(X2|y=0) 
+        x2_pdf_digit_1 = self.calc_pdf(self.__test_1_variance,self.__train0_meu_2_hat,self.__train0_variance_2_hat)
+
+        # P(X1|y=1)
+        x1_pdf_digit_1_ = self.calc_pdf(self.__test_1_mean,self.__train1_meu_1_hat,self.__train1_variance_1_hat)
+        # P(X2|y=1)
+        x2_pdf_digit_1_ = self.calc_pdf(self.__test_1_variance,self.__train1_meu_2_hat,self.__train1_variance_2_hat)
+        
+        print(x1_pdf_digit_1.shape, x2_pdf_digit_1.shape, x1_pdf_digit_1_.shape, x2_pdf_digit_1_.shape)
+        
+
     
 
 def main():
