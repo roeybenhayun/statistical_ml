@@ -48,7 +48,8 @@ class NaiveBayesClassifier:
     # reshape the images for easier matrix operations
     def reshape_data(self):
         print ("Reshape data")
-        # shape the image data (rool the axis for easier computations). create function - format and prepare data    
+        # shape the image data (rool the axis for easier computations). create function - format and prepare data
+        # This will reshape the matrix from 28 x 28 x N to N x 28 x 28 (for computation ease) 
         self.__test_0_image['target_img'] = np.rollaxis(self.__test_0_image['target_img'],-1)
         self.__test_1_image['target_img'] = np.rollaxis(self.__test_1_image['target_img'],-1)
         self.__train_0_image['target_img'] = np.rollaxis(self.__train_0_image['target_img'],-1)
