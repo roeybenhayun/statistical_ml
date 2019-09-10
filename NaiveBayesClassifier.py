@@ -4,7 +4,7 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import math
-
+from tempfile import TemporaryFile
 
 class NaiveBayesClassifier:
     def __init__(self, distribution = None, data_dir_path=None ):
@@ -12,6 +12,7 @@ class NaiveBayesClassifier:
         self.__data_file_list = ["test_0_img.mat", "test_0_label.mat", "test_1_img.mat", "test_1_label.mat", "train_0_img.mat", "train_0_label.mat", "train_1_img.mat", "train_1_label.mat"]
         self.__print_dims = False
         self.__plot_images = False
+        self.__outfile = TemporaryFile()
         # the default distribution
         if (distribution is None):
             self.__distribution = 'Gaussian'
@@ -23,26 +24,42 @@ class NaiveBayesClassifier:
             for mat_file in self.__data_file_list:
                 if (False == os.path.isfile(mat_file)):
                     print ("Missing file : " + str(mat_file))
-                print (mat_file)
+                #print (mat_file)
 
     # Preperation:  load the data and reshape for easier matrix operations
     def setup(self):
-        print ("setup")
+        print ("\nsetup")
+        print ("--------")
         self.load_data()
         self.reshape_data()
 
     # load the test and train data stored as mat file for digits 1 and 0
     def load_data(self):
-        print ("Load test and training data")
+        print ("Load test and train mat files")
         self.__test_0_image = scipy.io.loadmat (self.__data_path + "/test_0_img")
-        self.__test_0_lebel = scipy.io.loadmat (self.__data_path + "/test_0_label")
+        self.__test_0_label = scipy.io.loadmat (self.__data_path + "/test_0_label")
         self.__test_1_image = scipy.io.loadmat (self.__data_path + "/test_1_img")
         self.__test_1_label = scipy.io.loadmat (self.__data_path + "/test_1_label")
 
         self.__train_0_image = scipy.io.loadmat (self.__data_path + "/train_0_img")
-        self.__train_0_lebel = scipy.io.loadmat (self.__data_path + "/train_0_label")
+        self.__train_0_label = scipy.io.loadmat (self.__data_path + "/train_0_label")
         self.__train_1_image = scipy.io.loadmat (self.__data_path + "/train_1_img")
         self.__train_1_label = scipy.io.loadmat (self.__data_path + "/train_1_label")
+
+        #for key, value in self.__train_0_lebel.items() :
+        #    print (key, value)
+        # np.savetxt("out/train_label_1", self.__train_1_label['target_label'],delimiter=",")
+        # np.savetxt("out/test_label_1", self.__test_1_label['target_label'],delimiter=",")
+        # np.savetxt("out/train_label_0", self.__train_0_label['target_label'],delimiter=",")
+        # np.savetxt("out/test_label_0", self.__test_0_label['target_label'],delimiter=",")
+
+        if (True == self.__print_dims):
+            print ("\n******Imported data dims******")
+            print ("__test_0_image :", self.__test_0_image['target_img'] .shape)
+            print ("__test_1_image :", self.__test_1_image['target_img'] .shape)
+            print ("__train_0_image :", self.__train_0_image['target_img'] .shape)
+            print ("__train_1_image :", self.__train_1_image['target_img'] .shape)
+            print ("\n")
 
 
     # reshape the images for easier matrix operations
@@ -55,25 +72,29 @@ class NaiveBayesClassifier:
         self.__train_0_image['target_img'] = np.rollaxis(self.__train_0_image['target_img'],-1)
         self.__train_1_image['target_img'] = np.rollaxis(self.__train_1_image['target_img'],-1)
 
+       
         # plot an aribtery image from the test set. 
         if (True == self.__plot_images):
             self.show_image(self.__test_0_image['target_img'][55])
             self.show_image(self.__test_1_image['target_img'][99])
 
-
         # for debug. make sure matrix dims are correct.
         if (True == self.__print_dims):
-            print ("******Data dims*******")
-            print (self.__test_0_image['target_img'] .shape)
-            print (self.__test_1_image['target_img'] .shape)
-            print (self.__train_0_image['target_img'] .shape)
-            print (self.__train_1_image['target_img'] .shape)
+            print ("\n******Data dims*******")
+            print ("__test_0_image :", self.__test_0_image['target_img'] .shape)
+            print ("__test_1_image :", self.__test_1_image['target_img'] .shape)
+            print ("__train_0_image :", self.__train_0_image['target_img'] .shape)
+            print ("__train_1_image :", self.__train_1_image['target_img'] .shape)
+            print ("\n")
 
     # extract the foolowing features from each 28x28 gray image:
     # Pixel intensity mean
     # Avarage of row pixel intensity variances 
     def extract_features(self):
-        print ("extract features")
+        print ("\nextract features vectors")
+        print ("--------------------------")
+        print ("X1 - feature vector of mean brightness of every image")
+        print ("X2 - feature vector of avarage of varaince of each row in image")
         # First feature X1 : pixel intensity mean value
         self.__test_0_mean_feature_x1 = self.__test_0_image['target_img'].mean(axis=(1,2),keepdims=True,dtype=np.float64)
         self.__test_1_mean_feature_x1 = self.__test_1_image['target_img'].mean(axis=(1,2),keepdims=True,dtype=np.float64)
@@ -88,30 +109,25 @@ class NaiveBayesClassifier:
         self.__train_1_variance_feature_x2 = self.__train_1_image['target_img'].var(axis=2, ddof=0, dtype=np.float64)
 
         # Avarage the variance
-        self.__test_0_variance_feature_x2  = np.average(self.__test_0_variance_feature_x2 ,axis=1)
-        self.__test_1_variance_feature_x2  = np.average(self.__test_1_variance_feature_x2 ,axis=1)
-        self.__train_0_variance_feature_x2  = np.average(self.__train_0_variance_feature_x2 ,axis=1)
-        self.__train_1_variance_feature_x2  = np.average(self.__train_1_variance_feature_x2 ,axis=1)
+        self.__test_0_variance_feature_x2  = np.mean(self.__test_0_variance_feature_x2 ,axis=1,dtype=np.float64)
+        self.__test_1_variance_feature_x2  = np.mean(self.__test_1_variance_feature_x2 ,axis=1, dtype=np.float64)
+        self.__train_0_variance_feature_x2  = np.mean(self.__train_0_variance_feature_x2 ,axis=1, dtype=np.float64)
+        self.__train_1_variance_feature_x2  = np.mean(self.__train_1_variance_feature_x2 ,axis=1,)
 
         # for debug. make sure matrix dims are correct.
         if (True == self.__print_dims):
-            print ("******Mean dims*******")
-            print (self.__test_0_mean_feature_x1.shape)
-            print (self.__test_1_mean_feature_x1.shape)
-            print (self.__train_0_mean_feature_x1.shape)
-            print (self.__train_1_mean_feature_x1.shape)
+            print ("\n******Mean dims*******")
+            print ("__test_0_mean_feature_x1 :",self.__test_0_mean_feature_x1.shape)
+            print ("__test_1_mean_feature_x1: ", self.__test_1_mean_feature_x1.shape)
+            print ("__train_0_mean_feature_x1 :", self.__train_0_mean_feature_x1.shape)
+            print ("__train_1_mean_feature_x1 : ",self.__train_1_mean_feature_x1.shape)
             
-            print ("******Variance dims********")
-            print (self.__test_0_variance_feature_x2.shape)
-            print (self.__test_1_variance_feature_x2.shape)
-            print (self.__train_0_variance_feature_x2.shape)
-            print (self.__train_1_variance_feature_x2.shape)
-
-            print ("******Avarage variance dims**********")
-            print (self.__test_0_variance_feature_x2.shape)
-            print (self.__test_1_variance_feature_x2.shape)
-            print (self.__train_0_variance_feature_x2.shape)
-            print (self.__train_1_variance_feature_x2.shape)
+            print ("\n******Variance dims********")
+            print ("__test_0_variance_feature_x2 :", self.__test_0_variance_feature_x2.shape)
+            print ("__test_1_variance_feature_x2 : ", self.__test_1_variance_feature_x2.shape)
+            print ("__train_0_variance_feature_x2 :", self.__train_0_variance_feature_x2.shape)
+            print ("__train_1_variance_feature_x2: ", self.__train_1_variance_feature_x2.shape)
+            print ("\n")
 
 
     # show gray scale image
@@ -123,7 +139,6 @@ class NaiveBayesClassifier:
     # calc the prior probabilities of getting digit 0 and digits 1
     # in our case the auumption is that they are equal to 0.5
     def calc_prior_probabilities(self,digit):
-        print("calc_prior_probabilities")
         # Assumption : P(y=0)=P(y=1)=0.5
         if (digit == "1" or digit == "0"):
             return 0.5
@@ -135,25 +150,24 @@ class NaiveBayesClassifier:
             exponent = np.exp(-(np.power(X - mean, 2) / (2 * np.power(var, 2))))
             val = exponent / (np.sqrt(2 * math.pi * np.power(var, 2)))            
         elif(type == "Log"):
-            print ("Calc log lokelihood")
             val = ((np.log(1/(var * np.sqrt(2*math.pi)))) - (np.power(X-mean,2)/(2*np.power(var,2))))
 
         return val
 
     #This function gets the fetaure vector as input and return the MLE parameters: mean and variance
     def get_mle(self,X1,X2):
-        print ("get MLE")
-        meu_1_hat = np.average(X1)
-        variance_1_hat = np.var(X1,ddof=0)
+        meu_1_hat = np.mean(X1, dtype=np.float64)
+        variance_1_hat = np.std(X1,ddof=0, dtype=np.float64)
 
-        meu_2_hat = np.average(X2)
-        variance_2_hat = np.var(X2, ddof=0)
+        meu_2_hat = np.mean(X2, dtype=np.float64)
+        variance_2_hat = np.std(X2, ddof=0, dtype=np.float64)
         return meu_1_hat,variance_1_hat, meu_2_hat, variance_2_hat
 
     # get the prior probabilities and MLE parameter estimators using the training data sets for digit 0 and digit 1
     # (we have 2 features ,2 digit and 2 MLE parameters so in totoal we have 8 parameters)
     def train(self):
-        print ("train") 
+        print ("\ntrain")
+        print ("-------")
         # get prior probabilities
         self.__P_digit_equal_to_0 = self.calc_prior_probabilities("1")
         self.__P_digit_equal_to_1 = self.calc_prior_probabilities("0")
@@ -161,14 +175,24 @@ class NaiveBayesClassifier:
         self.__train0_meu_1_hat, self.__train0_variance_1_hat, self.__train0_meu_2_hat, self.__train0_variance_2_hat = self.get_mle(self.__train_0_mean_feature_x1, self.__train_0_variance_feature_x2)
         self.__train1_meu_1_hat, self.__train1_variance_1_hat, self.__train1_meu_2_hat, self.__train1_variance_2_hat = self.get_mle(self.__train_1_mean_feature_x1, self.__train_1_variance_feature_x2)
         
-        print (self.__train0_meu_1_hat,self.__train0_variance_1_hat, self.__train0_meu_2_hat, self.__train0_variance_2_hat)
-        print (self.__train1_meu_1_hat, self.__train1_variance_1_hat, self.__train1_meu_2_hat, self.__train1_variance_2_hat) 
+        print ("MLE parameters:")
+        print ("mle sultion of mean for feature X1 for digit 0 = ", self.__train0_meu_1_hat)
+        print ("mle sultion of variance for feature X1 for digit 0 = ",self.__train0_variance_1_hat)
+        print ("mle sultion of mean for feature X2 for digit 0 = ", self.__train0_meu_2_hat)
+        print ("mle sultion of variance for feature X2 for digit 0 = ", self.__train0_variance_2_hat)
+
+        print ("\nmle sultion of mean for feature X1 for digit 1 = ",self.__train1_meu_1_hat)
+        print ("mle sultion of variance for feature X1 for digit 1 = ", self.__train1_variance_1_hat)
+        print ("mle sultion of mean for feature X2 for digit 1 = ", self.__train1_meu_2_hat)
+        print ("mle sultion of variance for feature X2 for digit 1 = ", self.__train1_variance_2_hat)
+
 
     # test the model parameters. Assume iid, P(X1|y=0)*P(X2|y=0), P(X1|y=1)*P(X2|y=1)
     # to test digit 0 we will use the testing data and plug in the features to the gaussian pdf the to get the probability
     # Ne
     def test(self):
-        print ("test")
+        print ("\ntest")
+        print ("----")
         # (assume iid) 
         # P(X1|y=0)*P(X2|y=0) 
         # P(X1|y=1)*P(X2|y=1)
@@ -190,18 +214,22 @@ class NaiveBayesClassifier:
         x1_pdf_digit_0_ = x1_pdf_digit_0_.reshape(-1)
 
         if (calc_mode == 'Gaussian'):
+            #P(X1|y=0)*P(X2|y=0)
             joint_p1 = np.multiply(x1_pdf_digit_0 , x2_pdf_digit_0)
+            # P(X1|y=1)*P(X2|y=1)
             joint_p2 = np.multiply(x1_pdf_digit_0_ , x2_pdf_digit_0_)
         elif (calc_mode == "Log"):
             joint_p1 = np.add(x1_pdf_digit_0 , x2_pdf_digit_0)
             joint_p2 = np.add(x1_pdf_digit_0_ , x2_pdf_digit_0_)
 
-        diff = np.greater(joint_p1,joint_p2)
+        # 
+        diff = np.greater(joint_p2,joint_p1)
         
-        print(self.__test_0_mean_feature_x1.size)
         print ("***************************************************************")
-        print ("Number of 0 labeled digits recognized as 1 is : " , np.sum(diff))
-        print ("***************************************************************")
+        print ("** Total number of digit '0' test sample is ", self.__test_0_mean_feature_x1.size)
+        print ("** Number of 1 labeled digits recognized as 0 is : " , np.sum(diff))
+        print ("** Accuracy rete ", 100 * (self.__test_0_mean_feature_x1.size - np.sum(diff))/self.__test_0_mean_feature_x1.size, "%")
+        print ("***************************************************************\n")
 
         # test digit 1
         x1_pdf_digit_1 = self.calc_pdf(calc_mode,self.__test_1_mean_feature_x1,self.__train0_meu_1_hat,self.__train0_variance_1_hat)
@@ -226,18 +254,14 @@ class NaiveBayesClassifier:
 
         diff = np.greater(joint_p1,joint_p2)
 
-        #print(self.__test_0_mean_feature_x1.size)
         print ("***************************************************************")
-        print ("Number of 1 labeled digits recognized as 0 is : " , np.sum(diff))
-        print ("***************************************************************")
-
-        if (True == self.__print_dims):
-            print(x1_pdf_digit_0.shape, x2_pdf_digit_0.shape, x1_pdf_digit_0_.shape, x2_pdf_digit_0_.shape)
-            print(x1_pdf_digit_1.shape, x2_pdf_digit_1.shape, x1_pdf_digit_1_.shape, x2_pdf_digit_1_.shape)
+        print ("** Total number of digit '1' test sample is ", self.__test_0_mean_feature_x1.size)
+        print ("** Number of 1 labeled digits recognized as 0 is : " , np.sum(diff))
+        print ("** Accuracy rete ", 100 * (self.__test_0_mean_feature_x1.size - np.sum(diff))/self.__test_0_mean_feature_x1.size, "%")
+        print ("***************************************************************\n")
     
 
 def main():
-    print ("Setup")
     naiveBayesClassifier = NaiveBayesClassifier()
     naiveBayesClassifier.setup()
     naiveBayesClassifier.extract_features()
