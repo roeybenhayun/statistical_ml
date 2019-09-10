@@ -227,7 +227,7 @@ class NaiveBayesClassifier:
         
         print ("***************************************************************")
         print ("** Total number of digit '0' test sample is ", self.__test_0_mean_feature_x1.size)
-        print ("** Number of 1 labeled digits recognized as 0 is : " , np.sum(diff))
+        print ("** Number of 0 labeled digits recognized as 1 is : " , np.sum(diff))
         print ("** Accuracy rete ", 100 * (self.__test_0_mean_feature_x1.size - np.sum(diff))/self.__test_0_mean_feature_x1.size, "%")
         print ("***************************************************************\n")
 
