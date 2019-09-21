@@ -15,6 +15,7 @@ class KMeansClustering:
         self.__save = False
         self.__unlabeled_data=[]
         self.__distances = []
+        self.__clusters = []
         self.__cluster_init_strategy = 1
         self.__k = 2
 
@@ -48,9 +49,22 @@ class KMeansClustering:
         self.cluster_init_strategy = cluster_init_strategy
 
         self.load_data()
+
+        # init distance 2d Nxk array (where N is the number of samples and k is the number of clusters)
         self.__distances = np.zeros([self.__unlabeled_data.shape[0],k])
         print("self.__distances", self.__distances.shape)
+
+        # init clusters 3d kxNxL array (where k is the number of clusters, N is the number of samples, L is the number of classes/features if the input data)
+        self.__clusters = np.zeros([self.__k,self.__unlabeled_data.shape[0],self.__unlabeled_data.shape[1]])
+        print("self.__clusters", self.__clusters.shape)
         
+        # a temp clusters 3d array
+        self.__prev_clusters = np.zeros([self.__k,self.__unlabeled_data.shape[0],self.__unlabeled_data.shape[1]])
+        print("self.__prev_clusters", self.__prev_clusters.shape)
+
+        self.__clusters[:,:,:] = self.__unlabeled_data
+
+        #print (self.__prev_clusters.shape)
 
     def load_data(self):
         """
@@ -71,7 +85,7 @@ class KMeansClustering:
             plt.ylabel('X2')
         
         if (self.__save == True):
-            np.savetxt("data", self.__unlabeled_data['AllSamples'],delimiter=",")
+            np.savetxt("data", self.__unlabeled_data,delimiter=",")
         
 
 
@@ -96,7 +110,37 @@ class KMeansClustering:
         self.init_centeriods(self.__cluster_init_strategy, self.__k)
 
         # here should the for loop according to the size of the rand_index array
+        #print ("self.__distance = ", self.__distances.shape)
+        #print(self.__distances.shape)
+        #print(self.__distances[:,1,None].shape)
 
+        # get the distance from the cluster center/ loop here
+        self.__distances[:,0,None] = np.linalg.norm(self.__clusters[0,:,:] - self.__C[0], axis=1, keepdims = True)
+        self.__distances[:,1,None] = np.linalg.norm(self.__clusters[1,:,:] - self.__C[1], axis=1, keepdims = True)
+        
+        # argmin {distance_vector}
+
+        # save the the clusters
+        self.__prev_clusters = self.__clusters
+
+        # update the new clusters
+
+        # calculate the new center
+
+
+
+
+
+
+
+
+
+        #print(self.__distances.shape)
+        if (self.__save == True):
+            np.savetxt("distance0", self.__distances[:,0],delimiter=",")
+            np.savetxt("distance1", self.__distances[:,1],delimiter=",")
+        #print (self.__distances[:,1,None].shape)
+        #print(self.__distances[:,1])
         #distance1 = np.linalg.norm(self.__unlabeled_data - C[0], axis=1,keepdims=True)
         #distance2 = np.linalg.norm(self.__unlabeled_data - C[1], axis=1,keepdims=True)
         
