@@ -134,9 +134,10 @@ class KMeansClustering:
         # update the new clusters
         # For with number of K's
     
-        for i in range(0,self.__unlabeled_data.shape[0]):
-            cluster_index = self.__min_distances[i]
-            print(cluster_index)
+        for sample in self.__unlabeled_data:
+            print(sample)
+            #cluster_index = self.__min_distances[i]
+            #print(cluster_index)
             #self.__clusters[cluster_index,:,:] = self.__prev_clusters[cluster]
             #self.__clusters[0,:,:] = self.__prev_clusters[]
 
