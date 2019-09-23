@@ -55,7 +55,7 @@ class KMeansClustering:
             return
         
         self.__k = k
-        self.cluster_init_strategy = cluster_init_strategy
+        self.__cluster_init_strategy = cluster_init_strategy
 
         self.load_data()
 
@@ -106,14 +106,67 @@ class KMeansClustering:
             print("Cluster init strategy: randomally pick the initial canters from the givan examples ")
             # get list of random index in the range of the unlabled data
             rand_index = np.random.choice(self.__unlabeled_data.shape[0], self.__k, replace=False)
-
             # randomally init the centers lists
             self.__C = self.__unlabeled_data[rand_index]
-
             self.__C_old = np.zeros(self.__C.shape)
             
         elif(cluster_init_strategy == 2):
-            print("Cluster init strategy: first random. Other by min dustance")
+            print("Cluster init strategy: first random. Other centers by the average of the maximal distance")
+            # Pick the first center randomally
+            # I am picking them all randomally, and override (according to the description below) starting the second center
+            rand_index = np.random.choice(self.__unlabeled_data.shape[0], self.__k, replace=False)
+            self.__C = self.__unlabeled_data[rand_index]
+            self.__C_old = np.zeros(self.__C.shape)
+
+            for x in range(0,self.__unlabeled_data.shape[0]):
+                sample = self.__unlabeled_data[x]
+                if sample[0] < 0:
+                    print ("sample[0]<0")
+                    print(sample[0])
+                if sample[1] < 0:
+                    print ("sample[1]<0")
+                    print(sample[1])
+            # override center array from position 1
+            # For the i-th center (i>1), choose a sample (among all possible samples)
+            # such that the average distance of this chosen one to all previous (i-1)
+            # centers is maximal
+            flag = True
+            if (flag == True):
+                n = 0
+                max_distance = 0
+                sample = []
+                candidate_sample = []
+                distance = 0
+
+                for k in range (1,self.__k):                         
+                    # iterate all samples       
+                    for x in range(0,self.__unlabeled_data.shape[0]):
+                        # get a sample
+                        sample = self.__unlabeled_data[x]
+                        # iterate over the previous centers
+                        distance = 0
+                        n = 0
+                        for j in range (0,k):
+                            n = n + 1
+                            # sum the distance of the current sample from the previous clusters centers
+                            distance = distance + np.linalg.norm(sample - self.__C[j],keepdims = True)
+                            #print("Distance = ", distance, "Sample = ", sample, "center =", self.__C[j])
+
+                        # average the previous distances
+                        # make sure n is not zero
+                        average_distance = distance / n
+                        if (average_distance > max_distance):
+                            # update the max value and and candidate sample
+                            candidate_sample = sample
+                            max_distance = average_distance
+                    # update the final centers 
+                    self.__C[k] = candidate_sample
+                    max_distance = 0
+                    sample = []
+                    candidate_sample = []
+
+
+            print (self.__C)
         else:
             print ("Invalid cluster init strategy")
 
@@ -121,7 +174,7 @@ class KMeansClustering:
     def compute(self):
         
         self.init_centeriods(self.__cluster_init_strategy, self.__k)
-                            
+             
         while(np.allclose(self.__C,self.__C_old) == False):
             self.__kmeans_algo_iterations = self.__kmeans_algo_iterations + 1
 
@@ -160,7 +213,7 @@ class KMeansClustering:
 
 def main():
     kMeansClustering = KMeansClustering()
-    kMeansClustering.setup(1,2)
+    kMeansClustering.setup(2,6)
     kMeansClustering.compute()
     
     #kMeansClustering.setup(2,4)
