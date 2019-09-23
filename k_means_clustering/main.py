@@ -18,6 +18,7 @@ class KMeansClustering:
         self.__clusters = []
         self.__cluster_init_strategy = 1
         self.__k = 2
+        self.__kmeans_algo_iterations = 0
 
         if (data_dir_path is None):
             # assume data dir is in the current directory
@@ -27,6 +28,14 @@ class KMeansClustering:
                 if (False == os.path.isfile(mat_file)):
                     print ("Missing file : " + str(mat_file))
 
+
+    def cleanup(self):
+        self.__unlabeled_data=[]
+        self.__distances = []
+        self.__clusters = []
+        self.__cluster_init_strategy = 1
+        self.__k = 2
+        self.__kmeans_algo_iterations = 0
 
     def setup(self,cluster_init_strategy, k):
         """
@@ -97,90 +106,49 @@ class KMeansClustering:
             print("Cluster init strategy: randomally pick the initial canters from the givan examples ")
             # get list of random index in the range of the unlabled data
             rand_index = np.random.choice(self.__unlabeled_data.shape[0], self.__k, replace=False)
+
             # randomally init the centers lists
             self.__C = self.__unlabeled_data[rand_index]
-            # a temp list of centers
-            self.__C_prev = self.__C
-            print("self.__C", self.__C)
+
+            self.__C_old = np.zeros(self.__C.shape)
+            
         elif(cluster_init_strategy == 2):
             print("Cluster init strategy: first random. Other by min dustance")
         else:
             print ("Invalid cluster init strategy")
 
-    # reshape the images for easier matrix operations
+    
     def compute(self):
         
         self.init_centeriods(self.__cluster_init_strategy, self.__k)
+                            
+        while(np.allclose(self.__C,self.__C_old) == False):
+            self.__kmeans_algo_iterations = self.__kmeans_algo_iterations + 1
 
-        # here should the for loop according to the size of the rand_index array
-        #print ("self.__distance = ", self.__distances.shape)
-        #print(self.__distances.shape)
-        #print(self.__distances[:,1,None].shape)
+            self.__C_old = np.copy(self.__C)
 
-        #while()
+            # get the distance from the cluster center
+            for k in range(0,self.__k):
+                self.__distances[:,k,None] = np.linalg.norm(self.__unlabeled_data - self.__C[k], axis=1, keepdims = True)
+                        
+            self.__min_distances = np.argmin(self.__distances, axis=1)
+            
+            for k in range (0,self.__k):
+                cluster_index = np.where(self.__min_distances == k)
+                cluster = np.take(self.__unlabeled_data,cluster_index,axis=0)
+                self.__C[k] = np.mean(cluster, axis=1)            
 
-        # get the distance from the cluster center/ loop here
-        # for number of K's
-        for k in range(0,self.__k):
-            self.__distances[:,k,None] = np.linalg.norm(self.__unlabeled_data - self.__C[k], axis=1, keepdims = True)
-            #self.__distances[:,1,None] = np.linalg.norm(self.__clusters[1,:,:] - self.__C[1], axis=1, keepdims = True)   
+            if (self.__save == True):
+                np.savetxt("distance0", self.__distances[:,0],delimiter=",")
+                np.savetxt("distance1", self.__distances[:,1],delimiter=",")
+                np.savetxt("min distances", self.__min_distances,delimiter=",")
 
-        print ("^^^^^^^^^^^^^^^^^")
-        print(self.__distances)
-        print ("^^^^^^^^^^^^^^^^^")
-        # argmin {distance_vector}
-        self.__min_distances = np.argmin(self.__distances, axis=1)
-        print(self.__min_distances)
-        # save the last clusters
-        self.__prev_clusters = self.__clusters
+        print ("Number of clusters = ", self.__k)
+        print ("Number of Kmeans iterations = ", self.__kmeans_algo_iterations)
+        print ("Clusters centroid = ", self.__C)
 
-        # for loop here on to number of k 
-        result = np.where(self.__min_distances == 0)
-        result2 = np.take(self.__unlabeled_data,result,axis=0)
-        # calc mean each iteration and save 
-        
-        #print (result)
-        #print (result2)
-        # update the new clusters
-        # For with number of K's
-    
-        #for sample in self.__unlabeled_data:
-        #    print(sample)
-            #cluster_index = self.__min_distances[i]
-            #print(cluster_index)
-            #self.__clusters[cluster_index,:,:] = self.__prev_clusters[cluster]
-            #self.__clusters[0,:,:] = self.__prev_clusters[]
+        self.cleanup()
 
-        # calculate the new center
-
-
-        #print(self.__distances.shape)
-        if (self.__save == True):
-            np.savetxt("distance0", self.__distances[:,0],delimiter=",")
-            np.savetxt("distance1", self.__distances[:,1],delimiter=",")
-            np.savetxt("min distances", self.__min_distances,delimiter=",")
-        #print (self.__distances[:,1,None].shape)
-        #print(self.__distances[:,1])
-        #distance1 = np.linalg.norm(self.__unlabeled_data - C[0], axis=1,keepdims=True)
-        #distance2 = np.linalg.norm(self.__unlabeled_data - C[1], axis=1,keepdims=True)
-        
-        #temp = np.argmin()
-        #print (type(distance))
-        #print (distance.shape)
-        #np.savetxt("distance1", distance1,delimiter=",")
-        #np.savetxt("distance2", distance2,delimiter=",")
-        
-        #print ("C : ", C)
-        #print ("C_prev : ", C_prev)
-        #print ("C_prev dims  = ", C_prev.shape)
-        #error = np.linalg.norm(C-C_prev, axis = 1, keepdims=True)
-        #print (error)
-        #val = np.count_nonzero(error)
-        #print(val)
-
-
-
-    # show gray scale image
     def show_image(self,image):
         print ("show_image")
         #plt.imshow(image, cmap=plt.cm.gray)
