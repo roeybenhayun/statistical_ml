@@ -87,7 +87,7 @@ class KMeansClustering:
             plt.xlabel('X1')
             plt.ylabel('X2')
         
-        if (self.__save == True):
+        if (self.__save == False):
             np.savetxt("data", self.__unlabeled_data,delimiter=",")
         
 
@@ -122,20 +122,30 @@ class KMeansClustering:
         # get the distance from the cluster center/ loop here
         # for number of K's
         for k in range(0,self.__k):
-            self.__distances[:,k,None] = np.linalg.norm(self.__clusters[k,:,:] - self.__C[k], axis=1, keepdims = True)
+            self.__distances[:,k,None] = np.linalg.norm(self.__unlabeled_data - self.__C[k], axis=1, keepdims = True)
             #self.__distances[:,1,None] = np.linalg.norm(self.__clusters[1,:,:] - self.__C[1], axis=1, keepdims = True)   
 
+        print ("^^^^^^^^^^^^^^^^^")
+        print(self.__distances)
+        print ("^^^^^^^^^^^^^^^^^")
         # argmin {distance_vector}
         self.__min_distances = np.argmin(self.__distances, axis=1)
-
+        print(self.__min_distances)
         # save the last clusters
         self.__prev_clusters = self.__clusters
 
+        # for loop here on to number of k 
+        result = np.where(self.__min_distances == 0)
+        result2 = np.take(self.__unlabeled_data,result,axis=0)
+        # calc mean each iteration and save 
+        
+        #print (result)
+        #print (result2)
         # update the new clusters
         # For with number of K's
     
-        for sample in self.__unlabeled_data:
-            print(sample)
+        #for sample in self.__unlabeled_data:
+        #    print(sample)
             #cluster_index = self.__min_distances[i]
             #print(cluster_index)
             #self.__clusters[cluster_index,:,:] = self.__prev_clusters[cluster]
