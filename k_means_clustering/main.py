@@ -13,6 +13,7 @@ class KMeansClustering:
         self.__print_dims = False
         self.__plot = False
         self.__save = False
+        self.__log_enabled = False
         self.__unlabeled_data=[]
         self.__distances = []
         self.__clusters = []
@@ -30,6 +31,16 @@ class KMeansClustering:
 
 
     def cleanup(self):
+        """
+        Cleanup and set default values. This is private method which is called on exit of compute method
+        Parameters
+        ----------
+        None
+
+        Return
+        ------
+        None
+        """
         self.__unlabeled_data=[]
         self.__distances = []
         self.__clusters = []
@@ -39,13 +50,18 @@ class KMeansClustering:
 
     def setup(self,cluster_init_strategy, k):
         """
-        Initial setup for the KMeans Clustering algorithm
+        Initial setup and input params validation for the KMeans Clustering algorithm. 
+        This is a 'private' method. This method should be invoked internally
         Parameters
         ----------
         cluster_init_strategy, the selection used for the initial cluster center
-                1 - randomally pick the initial canters from the givan examples
+                1 - randomally pick the initial canters from the givan examples (default is 1)
                 2 - pick the first randomally
-        k, number of clusters (2-10)        
+        k, number of clusters (2-10) (default is 2)
+
+        Return
+        ------
+        None     
         """
         if (cluster_init_strategy != 1 and cluster_init_strategy !=2):
             print ("Invalid cluster selection strategy. Please supported method")
@@ -61,26 +77,37 @@ class KMeansClustering:
 
         # init distance 2d Nxk array (where N is the number of samples and k is the number of clusters)
         self.__distances = np.zeros([self.__unlabeled_data.shape[0],k])
-        print("self.__distances", self.__distances.shape)
 
         self.__min_distances = np.zeros([self.__unlabeled_data.shape[0],1])
 
-        print ("self.__min_distances", self.__min_distances.shape)
         # init clusters 3d kxNxL array (where k is the number of clusters, N is the number of samples, L is the number of classes/features if the input data)
         self.__clusters = np.zeros([self.__k,self.__unlabeled_data.shape[0],self.__unlabeled_data.shape[1]])
-        print("self.__clusters", self.__clusters.shape)
         
         # a temp clusters 3d array
         self.__prev_clusters = np.zeros([self.__k,self.__unlabeled_data.shape[0],self.__unlabeled_data.shape[1]])
-        print("self.__prev_clusters", self.__prev_clusters.shape)
 
         self.__clusters[:,:,:] = self.__unlabeled_data
 
-        #print (self.__prev_clusters.shape)
+        if (self.__log_enabled == True):
+            print("self.__distances", self.__distances.shape)
+            print ("self.__min_distances", self.__min_distances.shape)
+            print("self.__clusters", self.__clusters.shape)
+            print("self.__prev_clusters", self.__prev_clusters.shape)
+
+
+        
+
 
     def load_data(self):
         """
-        load the unlabeled data
+        Load the input data (e.g. the samples to be clusters)
+        Parameters
+        ----------
+        None
+
+        Return
+        ------
+        None     
         """
         self.__data = scipy.io.loadmat (self.__data_path + "/AllSamples.mat")
         self.__unlabeled_data = self.__data['AllSamples']
@@ -102,6 +129,21 @@ class KMeansClustering:
 
 
     def init_centeriods(self,cluster_init_strategy, k):
+
+        """
+        Init clusters centroid according to init strategy and the number of clusters
+        Parameters
+        ----------
+        cluster_init_strategy, the selection used for the initial cluster center
+                1 - randomally pick the initial canters from the givan examples (default is 1)
+                2 - pick the first randomally
+        k, number of clusters (2-10) (default is 2)
+
+        Return
+        ------
+        None     
+        """
+
         if (cluster_init_strategy == 1):
             print("Cluster init strategy: randomally pick the initial canters from the givan examples ")
             # get list of random index in the range of the unlabled data
@@ -114,18 +156,13 @@ class KMeansClustering:
             print("Cluster init strategy: first random. Other centers by the average of the maximal distance")
             # Pick the first center randomally
             # I am picking them all randomally, and override (according to the description below) starting the second center
-            rand_index = np.random.choice(self.__unlabeled_data.shape[0], self.__k, replace=False)
-            self.__C = self.__unlabeled_data[rand_index]
-            self.__C_old = np.zeros(self.__C.shape)
+            self.__C_old = np.zeros([self.__k,self.__unlabeled_data.shape[1]])
+            self.__C = np.copy(self.__C_old)
 
-            for x in range(0,self.__unlabeled_data.shape[0]):
-                sample = self.__unlabeled_data[x]
-                if sample[0] < 0:
-                    print ("sample[0]<0")
-                    print(sample[0])
-                if sample[1] < 0:
-                    print ("sample[1]<0")
-                    print(sample[1])
+            rand_index = np.random.choice(self.__unlabeled_data.shape[0], 1, replace=False)
+            self.__C[0] = self.__unlabeled_data[rand_index]
+            
+
             # override center array from position 1
             # For the i-th center (i>1), choose a sample (among all possible samples)
             # such that the average distance of this chosen one to all previous (i-1)
@@ -165,17 +202,34 @@ class KMeansClustering:
                     sample = []
                     candidate_sample = []
 
-
-            print (self.__C)
         else:
             print ("Invalid cluster init strategy")
 
     
     def compute(self):
-        
+
+        """
+        The implementation of the k means algorithem.        
+        1. init centeroids
+        2. calc the distance for the centeroids
+        3. get the minimum distance to the centroid
+        4. calc the mean
+        5. update the new centroid untill algo converge (the error vector is 0)
+
+        Parameters
+        ----------
+        None
+
+        Return
+        ------
+        None     
+        """ 
         self.init_centeriods(self.__cluster_init_strategy, self.__k)
-             
-        while(np.allclose(self.__C,self.__C_old) == False):
+ 
+        error = np.linalg.norm(self.__C - self.__C_old, axis=1, keepdims = True)
+
+        #while(np.allclose(self.__C,self.__C_old) == False):
+        while(error.any() != 0):
             self.__kmeans_algo_iterations = self.__kmeans_algo_iterations + 1
 
             self.__C_old = np.copy(self.__C)
@@ -185,11 +239,26 @@ class KMeansClustering:
                 self.__distances[:,k,None] = np.linalg.norm(self.__unlabeled_data - self.__C[k], axis=1, keepdims = True)
                         
             self.__min_distances = np.argmin(self.__distances, axis=1)
-            
             for k in range (0,self.__k):
                 cluster_index = np.where(self.__min_distances == k)
                 cluster = np.take(self.__unlabeled_data,cluster_index,axis=0)
+                # !!NOTE --> there are some cases when running the kmeans algo with initializaion method 2 
+                # that the INITIAL centroid list has an identical centers. e.g.
+                # [[ 1.77775261  7.21854537]
+                # [ 6.5807212  -0.0766824 ]
+                # [ 9.26998864  9.62492869] <---
+                # [ 3.85212146 -1.08715226]
+                # [ 2.95297924  9.65073899]
+                # [ 9.26998864  9.62492869]] <--
+                # in that case np.take will return an empty list. Since there are an identical centers, the algo
+                # skips the calculation for that point
+                if (cluster.size == 0):continue
                 self.__C[k] = np.mean(cluster, axis=1)            
+
+            if (self.__log_enabled == True):
+                print ("C = ",self.__C, "C_old = ", self.__C_old)
+
+            error = np.linalg.norm(self.__C - self.__C_old, axis=1, keepdims = True)
 
             if (self.__save == True):
                 np.savetxt("distance0", self.__distances[:,0],delimiter=",")
@@ -204,21 +273,13 @@ class KMeansClustering:
 
     def show_image(self,image):
         print ("show_image")
-        #plt.imshow(image, cmap=plt.cm.gray)
-        #plt.show()
-        # calc the prior probabilities of getting digit 0 and digits 1
-        # in our case the auumption is that they are equal to 0.5
-        # 
-        #     
+   
 
 def main():
     kMeansClustering = KMeansClustering()
-    kMeansClustering.setup(2,6)
+    kMeansClustering.setup(1,10)
     kMeansClustering.compute()
     
-    #kMeansClustering.setup(2,4)
-    #kMeansClustering.compute()
-
 
 if __name__ == "__main__":
     main()
