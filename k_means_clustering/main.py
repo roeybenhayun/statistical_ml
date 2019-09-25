@@ -239,9 +239,18 @@ class KMeansClustering:
                 self.__distances[:,k,None] = np.linalg.norm(self.__unlabeled_data - self.__C[k], axis=1, keepdims = True)
                         
             self.__min_distances = np.argmin(self.__distances, axis=1)
+            sum_of_squered_distances = 0
             for k in range (0,self.__k):
                 cluster_index = np.where(self.__min_distances == k)
                 cluster = np.take(self.__unlabeled_data,cluster_index,axis=0)
+                
+                squared_distances = np.linalg.norm(cluster[0,:,:] - self.__C[k], axis=1, keepdims = True)
+
+                #norm = squared_distances.T.dot(squared_distances)
+                #temp = cluster[0,:,:]
+                #print (temp)
+                sum_of_squered_distances = sum_of_squered_distances + np.sum(squared_distances)
+                print(sum_of_squered_distances)
                 # !!NOTE --> there are some cases when running the kmeans algo with initializaion method 2 
                 # that the INITIAL centroid list has an identical centers. e.g.
                 # [[ 1.77775261  7.21854537]
@@ -265,20 +274,51 @@ class KMeansClustering:
                 np.savetxt("distance1", self.__distances[:,1],delimiter=",")
                 np.savetxt("min distances", self.__min_distances,delimiter=",")
 
+        # calculate the cost function 
+        #The inner sum is over a particular cluster j.
+        #It takes the sum of the distance from all points that belong to cluster j
+        #to the cluster center of cluster j. 
+        #Then the outer sum simply sums over all clusters.
+
+        #for k in range(0,self.__k):
+        #    self.__distances[:,k,None] = np.linalg.norm(self.__unlabeled_data - self.__C[k], axis=1, keepdims = True)
+        
+        # cost function 
+        #sum_of_squered_distances = np.sum(self.__distances)
+
         print ("Number of clusters = ", self.__k)
         print ("Number of Kmeans iterations = ", self.__kmeans_algo_iterations)
         print ("Clusters centroid = ", self.__C)
+        print ("Sum of squared distances = ", sum_of_squered_distances)
 
         self.cleanup()
+
+        return sum_of_squered_distances
 
     def show_image(self,image):
         print ("show_image")
    
 
 def main():
+    cost_function_1 = []
+    cost_function_2 = []
+
     kMeansClustering = KMeansClustering()
-    kMeansClustering.setup(1,10)
-    kMeansClustering.compute()
+    number_of_clusters = 10
+
+    for k in range(2,number_of_clusters+1):
+        kMeansClustering.setup(1,k)
+        cost_function_1.append(kMeansClustering.compute())
+    
+    for k in range(2,number_of_clusters+1):
+        kMeansClustering.setup(2,k)
+        cost_function_2.append(kMeansClustering.compute())
+
+    k = np.arange(2,number_of_clusters+1)
+    #print (cost_function_vector)
+    plt.plot (k,cost_function_1)
+    plt.plot (k,cost_function_2)
+    plt.show()
     
 
 if __name__ == "__main__":
