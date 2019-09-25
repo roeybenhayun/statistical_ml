@@ -143,9 +143,9 @@ class KMeansClustering:
         ------
         None     
         """
-
         if (cluster_init_strategy == 1):
-            print("Cluster init strategy: randomally pick the initial canters from the givan examples ")
+            if (self.__log_enabled == True):
+                print("Cluster init strategy: randomally pick the initial canters from the givan examples ")
             # get list of random index in the range of the unlabled data
             rand_index = np.random.choice(self.__unlabeled_data.shape[0], self.__k, replace=False)
             # randomally init the centers lists
@@ -153,7 +153,8 @@ class KMeansClustering:
             self.__C_old = np.zeros(self.__C.shape)
             
         elif(cluster_init_strategy == 2):
-            print("Cluster init strategy: first random. Other centers by the average of the maximal distance")
+            if (self.__log_enabled == True):
+                print("Cluster init strategy: first random. Other centers by the average of the maximal distance")
             # Pick the first center randomally
             # I am picking them all randomally, and override (according to the description below) starting the second center
             self.__C_old = np.zeros([self.__k,self.__unlabeled_data.shape[1]])
@@ -188,10 +189,7 @@ class KMeansClustering:
                             # sum the distance of the current sample from the previous clusters centers
                             l2_norm = np.linalg.norm(sample - self.__C[j],keepdims = True)
                             squared_l2_norm = l2_norm * l2_norm
-                            #distance = distance + np.linalg.norm(sample - self.__C[j],keepdims = True)
                             distance = distance + squared_l2_norm
-                            #print("Distance = ", distance, "Sample = ", sample, "center =", self.__C[j])
-
                         # average the previous distances
                         # make sure n is not zero
                         average_distance = distance / n
@@ -225,13 +223,12 @@ class KMeansClustering:
 
         Return
         ------
-        Value of the cost function     
+        Objective function value     
         """ 
         self.init_centeriods(self.__cluster_init_strategy, self.__k)
  
         error = np.linalg.norm(self.__C - self.__C_old, axis=1, keepdims = True)
 
-        #while(np.allclose(self.__C,self.__C_old) == False):
         while(error.any() != 0):
             self.__kmeans_algo_iterations = self.__kmeans_algo_iterations + 1
 
@@ -252,7 +249,6 @@ class KMeansClustering:
 
                 squared_l2_norm = l2_norm * l2_norm
                 sum_of_squered_distances = sum_of_squered_distances + np.sum(squared_l2_norm)
-                #print(sum_of_squered_distances)
                 # !!NOTE --> there are some cases when running the kmeans algo with initializaion method 2 
                 # that the INITIAL centroid list has an identical centers. e.g.
                 # [[ 1.77775261  7.21854537]
@@ -276,10 +272,11 @@ class KMeansClustering:
                 np.savetxt("distance1", self.__distances[:,1],delimiter=",")
                 np.savetxt("min distances", self.__min_distances,delimiter=",")
 
-
-        print ("Number of clusters = ", self.__k)
-        print ("Number of Kmeans iterations = ", self.__kmeans_algo_iterations)
-        print ("Sum of squared distances = ", sum_of_squered_distances)
+        if (self.__log_enabled == True):
+            print ("Number of clusters = ", self.__k)
+            print ("Number of Kmeans iterations = ", self.__kmeans_algo_iterations) 
+            print ("Sum of squared distances = ", sum_of_squered_distances)
+        
 
         self.cleanup()
 
@@ -287,26 +284,44 @@ class KMeansClustering:
 
 
 def main():
-    cost_function_1 = []
-    cost_function_2 = []
+
+    objective_function_1 = []
+    objective_function_2 = []
 
     kMeansClustering = KMeansClustering()
     number_of_clusters = 10
-
-    centroid_init_strategy = 1
-    for k in range(2,number_of_clusters+1):
-        kMeansClustering.setup(centroid_init_strategy,k)
-        cost_function_1.append(kMeansClustering.compute())
-    
-    centroid_init_strategy = 2
-    for k in range(2,number_of_clusters+1):
-        kMeansClustering.setup(centroid_init_strategy ,k)
-        cost_function_2.append(kMeansClustering.compute())
-
+    number_of_runs = 2
     k = np.arange(2,number_of_clusters+1)
-    plt.plot (k,cost_function_1)
-    plt.plot (k,cost_function_2)
+
+    plt.title('Elbow Graph')
+    plt.xlabel('Number of Clusters K')
+    plt.ylabel('Objective Function Value')
+
+    for run in range(1, number_of_runs+1):
+        centroid_init_strategy = 1
+        for _k in range(2,number_of_clusters+1):
+            kMeansClustering.setup(centroid_init_strategy,_k)
+            objective_function_1.append(kMeansClustering.compute())
+        label = "Strategy 1 - run" + str(run)
+        plt.plot (k,objective_function_1, label = label)
+        plt.legend()
+        #plt.show()
+
+        centroid_init_strategy = 2
+        for _k in range(2,number_of_clusters+1):
+            kMeansClustering.setup(centroid_init_strategy ,_k)
+            objective_function_2.append(kMeansClustering.compute())
+        label = "Strategy 2 - run" + str(run)
+        plt.plot (k,objective_function_2, label = label)
+        plt.legend()
+        #plt.show()
+        
+        objective_function_1 = []
+        objective_function_2 = []
+    
+
     plt.show()
+
     
 
 if __name__ == "__main__":
