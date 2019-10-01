@@ -1,2 +1,6 @@
 .vscode/
 .DS_Store
+docs
+figures/
+data
+k_means_clustering/data
