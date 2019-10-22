@@ -79,7 +79,7 @@ AND orders.customer_id = customer.customer_id
 AND orders.salesman_id = salesman.salesman_id;
 */
 
-sselect salesman.name, salesman.commission, customer.cust_name, customer.city
+select salesman.name, salesman.commission, customer.cust_name, customer.city
 from salesman, customer
 where customer.salesman_id = salesman.salesman_id and salesman.commission between .12 and .14
 
@@ -133,4 +133,13 @@ begin
 end
 $$
 copy movie from public.getTableDataPath("movies") delimiter ',';
+*/
+/*
+drop table users
+drop table movies
+drop table taginfo
+drop table geners
+drop table ratings
+drop table tags
+drop table hasgenre
 */
