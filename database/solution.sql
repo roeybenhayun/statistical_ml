@@ -1,4 +1,4 @@
-
+/*
 create table users (
      userid int,
      name text,
@@ -48,7 +48,7 @@ create table hasagenre (
      foreign key (movieid) references movies,
      foreign key (genreid) references genres 
 );
-
+*/
 /*
 drop table hasagenre;
 drop table tags;
@@ -57,6 +57,15 @@ drop table genres;
 drop table taginfo;
 drop table movies;
 drop table users;
+drop table query1;
+drop table query2;
+drop table query3;
+drop table query4;
+drop table query5;
+drop table query6;
+drop table query7;
+drop table query8;
+drop table query9;
 */
 
 /*
@@ -69,89 +78,73 @@ copy tags from '/Users/roeybenhayun/Projects/ASU/Coursera-ASU-Database/course1/a
 copy hasagenre from '/Users/roeybenhayun/Projects/ASU/Coursera-ASU-Database/course1/assignment1/exampleinput/hasagenre.dat' delimiter '%';
 */
 
-/*get the max ID from the table. We know that it is the primary key*/
-
-
-select genreid
-from genres
-
-select count(*) as bla
-from genres
-
-
-select genres.name as mname
-from genres
-where genres.genreid=18
-
-select genres.name as name,avg(ratings.rating) as rating
-from hasagenre,genres,ratings
-where hasagenre.genreid=1 and genres.genreid=hasagenre.genreid and hasagenre.movieid=ratings.movieid
-group by genres.name
-
 
 /* query 1*/
-DO $$
-declare 
- a int;
- b text;
- c int;
-BEGIN
-   select MAX(genreid) from genres into c;
-   RAISE NOTICE 'Number of geners = %', c;
-   FOR counter IN 1..c LOOP
-   select count(hasagenre.movieid) as moviecount,genres.name as name into a,b
-   from hasagenre,genres
-   where (hasagenre.genreid=counter) and (genres.genreid=hasagenre.genreid)
-   group by genres.name;
-   RAISE NOTICE '%,%,counter %', a,b,counter;
-   END LOOP;
-END; $$
-
+create table query1 as( 
+     select genres.name as name, count(movies.movieid) as moviecount
+     from movies,genres,hasagenre
+     where genres.genreid=hasagenre.genreid and hasagenre.movieid=movies.movieid
+     group by genres.name
+);
 
 
 /* query 2*/
-DO $$
-declare 
- a numeric;
- b text;
- c int;
-BEGIN
-   select MAX(genreid) from genres into c;
-   RAISE NOTICE 'Number of geners = %', c;
-   FOR counter IN 1..c LOOP
-   select genres.name as name, avg(ratings.rating) as rating into b,a
-   from hasagenre,genres,ratings
-   where (hasagenre.genreid=counter) and (genres.genreid=hasagenre.genreid) and (hasagenre.movieid=ratings.movieid)
-   group by genres.name;
-   RAISE NOTICE '%,%,counter %', a,b,counter;
-   END LOOP;
-END; $$
-
+create table query2 as( 
+     select genres.name as name, avg(ratings.rating) as rating
+     from genres,ratings,movies,hasagenre
+     where genres.genreid=hasagenre.genreid and hasagenre.movieid=movies.movieid and ratings.movieid=movies.movieid
+     group by genres.name
+);
 
 /* query 3*/
-select movies.title as name, count(ratings.rating) as rating
-from ratings,movies
-where (ratings.movieid = movies.movieid)
-group by movies.title
-having count(ratings.rating) > 5
+create table query3 as( 
+     select movies.title as title, count(ratings.rating) as CountOfRatings
+     from ratings,movies
+     where (ratings.movieid = movies.movieid)
+     group by movies.title
+     having count(ratings.rating) >= 10
+);
 
 /* query 4*/
-select movies.movieid as movieid, movies.title as title
-from genres,hasagenre,movies
-where genres.name='Comedy' and hasagenre.genreid = genres.genreid and hasagenre.movieid=movies.movieid
+create table query4 as(
+     select movies.movieid as movieid, movies.title as title
+     from genres,hasagenre,movies
+     where genres.name='Comedy' and hasagenre.genreid = genres.genreid and hasagenre.movieid=movies.movieid
+);
+
 
 /* query 5*/
-select movies.title as text, avg(ratings.rating) as rating
-from movies,ratings
-where movies.movieid=ratings.movieid
-group by movies.title
+create table query5 as(
+     select movies.title as title, avg(ratings.rating) as average
+     from movies,ratings
+     where movies.movieid=ratings.movieid
+     group by movies.title
+);
 
 /* query 6*/
-select avg(ratings.rating) as rating, count(ratings.rating) as count
-from movies,ratings,genres
-where genres.name='Comedy'  and genres.genreid=ratings.movieid 
+create table query6 as(
+     select avg(ratings.rating) as average, count(ratings.rating) as count
+     from movies,ratings,genres,hasagenre
+     where genres.name='Comedy'  and genres.genreid=hasagenre.genreid and ratings.movieid = movies.movieid
+);
 
 /* query 7*/
-select avg(ratings.rating) as rating, count(ratings.rating) as count
-from movies,ratings,genres
-where (genres.name='Comedy'or genres.name='Romance') and genres.genreid=ratings.movieid 
+create table query7 as(
+     select avg(ratings.rating) as average
+     from movies,ratings,genres
+     where (genres.name='Comedy'or genres.name='Romance') and ratings.movieid=movies.movieid
+);
+
+/* query 8*/
+create table query8 as(
+     select avg(ratings.rating) as average
+     from movies,ratings,genres
+     where (genres.name='Comedy'or genres.name!='Romance') and ratings.movieid=movies.movieid
+);
+
+/* query 9*/
+create table query9 as(
+     select movies.movieid as movieid, ratings.rating
+     from ratings,movies
+     where ratings.userid=:v1 and movies.movieid=ratings.movieid
+);

@@ -143,3 +143,41 @@ drop table ratings
 drop table tags
 drop table hasgenre
 */
+
+
+/* query 2*/
+DO $$
+declare 
+ a numeric;
+ b text;
+ c int;
+BEGIN
+   select MAX(genreid) from genres into c;
+   RAISE NOTICE 'Number of geners = %', c;
+   FOR counter IN 1..c LOOP
+   select genres.name as name, avg(ratings.rating) as rating into b,a
+   from hasagenre,genres,ratings
+   where (hasagenre.genreid=counter) and (genres.genreid=hasagenre.genreid) and (hasagenre.movieid=ratings.movieid)
+   group by genres.name;
+   RAISE NOTICE '%,%,counter %', a,b,counter;
+   END LOOP;
+END; $$
+
+
+/* query 1*/
+DO $$
+declare 
+ a int;
+ b text;
+ c int;
+BEGIN
+   select MAX(genreid) from genres into c;
+   RAISE NOTICE 'Number of geners = %', c;
+   FOR counter IN 1..c LOOP
+   select count(hasagenre.movieid) as moviecount,genres.name as name into a,b
+   from hasagenre,genres
+   where (hasagenre.genreid=counter) and (genres.genreid=hasagenre.genreid)
+   group by genres.name;
+   RAISE NOTICE '%,%,counter %', a,b,counter;
+   END LOOP;
+END; $$
