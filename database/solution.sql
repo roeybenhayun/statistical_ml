@@ -87,7 +87,6 @@ create table query1 as(
      group by genres.name
 );
 
-
 /* query 2*/
 create table query2 as( 
      select genres.name as name, avg(ratings.rating) as rating
@@ -123,23 +122,54 @@ create table query5 as(
 
 /* query 6*/
 create table query6 as(
-     select avg(ratings.rating) as average, count(ratings.rating) as count
+     select avg(ratings.rating) as average
      from movies,ratings,genres,hasagenre
-     where genres.name='Comedy'  and genres.genreid=hasagenre.genreid and ratings.movieid = movies.movieid
+     where genres.name='Comedy' and hasagenre.genreid = genres.genreid and hasagenre.movieid=movies.movieid and ratings.movieid = movies.movieid
+);
+
+/* temp tables*/
+create table temp1 as(
+     select hasagenre.movieid as movieid
+     from genres,hasagenre
+     where genres.name='Comedy' and hasagenre.genreid = genres.genreid
+);
+create table temp2 as(
+     select hasagenre.movieid as movieid
+     from genres,hasagenre
+     where genres.name='Romance' and hasagenre.genreid = genres.genreid
+);
+
+create table temp3 as(
+     select temp1.movieid as movieid
+     from temp1,temp2
+     where temp1.movieid = temp2.movieid
 );
 
 /* query 7*/
-create table query7 as(
+create table query7 as (
      select avg(ratings.rating) as average
-     from movies,ratings,genres
-     where (genres.name='Comedy'or genres.name='Romance') and ratings.movieid=movies.movieid
+     from temp3, ratings
+     where temp3.movieid = ratings.movieid
+);
+
+
+create table temp4 as(
+     select hasagenre.movieid as movieid
+     from genres,hasagenre
+     where genres.name !='Comedy' and genres.name !='Romance' and hasagenre.genreid = genres.genreid
+);
+
+create table temp5 as(
+     select temp4.movieid as movieid
+     from temp4,temp2
+     where temp4.movieid = temp2.movieid
 );
 
 /* query 8*/
-create table query8 as(
+create table query8 as (
      select avg(ratings.rating) as average
-     from movies,ratings,genres
-     where (genres.name='Comedy'or genres.name!='Romance') and ratings.movieid=movies.movieid
+     from temp5, ratings
+     where temp5.movieid = ratings.movieid
 );
 
 /* query 9*/
@@ -148,3 +178,5 @@ create table query9 as(
      from ratings,movies
      where ratings.userid=:v1 and movies.movieid=ratings.movieid
 );
+
+
