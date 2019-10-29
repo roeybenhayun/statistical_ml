@@ -127,12 +127,14 @@ create table query6 as(
      where genres.name='Comedy' and hasagenre.genreid = genres.genreid and hasagenre.movieid=movies.movieid and ratings.movieid = movies.movieid
 );
 
+
 /* temp tables*/
 create table temp1 as(
      select hasagenre.movieid as movieid
      from genres,hasagenre
      where genres.name='Comedy' and hasagenre.genreid = genres.genreid
 );
+
 create table temp2 as(
      select hasagenre.movieid as movieid
      from genres,hasagenre
@@ -152,25 +154,23 @@ create table query7 as (
      where temp3.movieid = ratings.movieid
 );
 
-
-create table temp4 as(
+create table temp4 as (
      select hasagenre.movieid as movieid
      from genres,hasagenre
-     where genres.name !='Comedy' and genres.name !='Romance' and hasagenre.genreid = genres.genreid
+     where genres.name='Romance' and hasagenre.genreid = genres.genreid
+     except
+     select hasagenre.movieid as movieid
+     from genres,hasagenre
+     where genres.name ='Comedy' and hasagenre.genreid = genres.genreid
 );
 
-create table temp5 as(
-     select temp4.movieid as movieid
-     from temp4,temp2
-     where temp4.movieid = temp2.movieid
-);
 
-/* query 8*/
 create table query8 as (
      select avg(ratings.rating) as average
-     from temp5, ratings
-     where temp5.movieid = ratings.movieid
+     from ratings,temp4
+     where ratings.movieid=temp4.movieid
 );
+
 
 /* query 9*/
 create table query9 as(
