@@ -21,8 +21,8 @@ def Range_Partition(table,N, connection):
             #print(rating_range)
             rating_range_list.append(rating_range)
 
-        print(table_list)
-        print(rating_range_list)
+        #print(table_list)
+        #print(rating_range_list)
 
         command = (
         """
@@ -36,28 +36,58 @@ def Range_Partition(table,N, connection):
         for n in range(0,N):            
             table_name = table_list[n]            
             query = str.replace(command,'Ratings', table_name)
-            print(query)
-            cursor.execute(query)
+            #print(query)
+            #cursor.execute(query)
+
 
         print("Executing command - start")
+        
         command = (
         """
         insert into range_part0
         select userid,movieid,rating
         from Ratings
-        where rating >=0 and rating <= 2.0
+        where rating >=0.0 and rating <= 5.0
         """)
+        left_boundery = 0.0
+
+        if (N==1):
+            print("N=1")
+            #cursor.execute(command)
+        else:
+            #print(command)
+            print("N > 1")
+            right_boundery = rating_range_list[1]
+            query = str.replace(command,'5.0',str(right_boundery))
+            print(query)
+
+            #cursor.execute(query)
+            query = str.replace(query,table_list[0],table_list[1]) 
+
+            for n in range (2,N):
+                current_right_boundery = rating_range_list[n]
+                query = str.replace(query,str(right_boundery), str(current_right_boundery))                
+                query = str.replace(query,str(left_boundery),str(right_boundery))
+
+                print(left_boundery)
+                print(right_boundery)
+                print(query)               
+                #cursor.execute(query)
+                query = str.replace(query,table_list[n-1],table_list[n]) 
+                left_boundery = current_right_boundery
+                
 
 
-        cursor.execute(command)
+
+        #cursor.execute(command)
         print("Executing command - end")
-       
+
     except (Exception, psycopg2.Error) as error:
         print("Error while connecting to PostgreSQL", error)
 
     finally:
         if (connection):
-            cursor.close()
+            #cursor.close()
             connection.close()
             print("PostgresSQL Connection is close")
 
@@ -134,6 +164,7 @@ def Load_Ratings(path_to_dataset, connection):
 if __name__ == '__main__':
     connection = Get_Connection()
     #Load_Ratings("ml-10M100K/ratings.dat", connection)
-    #Range_Partition('Ratings',5, connection)
-    
+    Range_Partition('Ratings',4, connection)
 
+    
+   
