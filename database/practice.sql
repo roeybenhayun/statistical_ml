@@ -192,3 +192,9 @@ SELECT * FROM Ratings limit 5 offset 5
 
 /*use this for the round robin partition - save this in a metadata table?*/ 
 select count(*) from Ratings
+
+SELECT EXTRACT(EPOCH FROM INTERVAL '5 days 3 hours')
+
+SELECT TIMESTAMP WITH TIME ZONE 'epoch' + 982384720.12 * INTERVAL '1 second'
+
+SELECT EXTRACT(EPOCH FROM TIMESTAMP)
