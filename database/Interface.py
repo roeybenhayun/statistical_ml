@@ -202,7 +202,112 @@ def rangePartition(ratingstablename, numberofpartitions, openconnection):
 
 
 def roundRobinPartition(ratingstablename, numberofpartitions, openconnection):
-    pass
+    N = numberofpartitions
+    connection = openconnection
+    
+    try:
+        cursor = connection.cursor()
+        
+        table_list = []
+        # create table list according to the partition size
+        for n in range(0,N):            
+            table_name = 'range_part'+str(n)
+            #print (table_name)
+            table_list.append(table_name)
+
+        #print(table_list)
+        command = (
+        """
+        create table if not exists RoundRobinParitionedTable (
+            UserID int,     
+            MovieID int,            
+            Rating numeric                    
+        )
+        """
+        )
+        # Create the partitioned tables
+        for n in range(0,N):            
+            table_name = table_list[n]            
+            query = str.replace(command,'RoundRobinParitionedTable', table_name)            
+            cursor.execute(query)
+
+
+        command1 = (
+            """
+            insert into range_part0
+            select userid,movieid,rating
+            from Ratings
+            """
+        )
+
+        # use this table as a metadata table to store the next partition to write to 
+        # 
+        command2 = (
+        """
+        create table if not exists RoundRobinParitionMetadata (
+        NumberOfPartitions int,
+        NextPartitionToWrite int
+        )
+        """
+        )
+        # create the metadata table
+        cursor.execute(command2)
+
+
+        command3 = (""" insert into RoundRobinParitionMetadata (NumberOfPartitions,NextPartitionToWrite) values(_NumberOfPartitions,_NextPartitionToWrite) """)
+
+        if (N==1):
+            print("N=1")
+            cursor.execute(command1)
+            
+            query = str.replace(command3,'_NumberOfPartitions', str(N))
+            query = str.replace(query,'_NextPartitionToWrite', str(N))
+
+            cursor.execute(query)
+        else:
+            print("N>1")
+
+            # get the size of the table. not sure need it. 
+            cursor.execute("select count(*) from Ratings")
+            result = cursor.fetchone()
+            table_size = result[0]
+
+
+            command = (
+            """
+            insert into RoundRobinParitionedTable
+            select userid,movieid,rating
+            from Ratings
+            limit 1
+            offset _offset
+            """
+            )
+            
+
+            NextPartitionToWrite = 0
+            for n in range(0,table_size):
+                NextPartitionToWrite = n%N
+                selected_table = table_list[n%N]
+                query = str.replace(command,'RoundRobinParitionedTable', selected_table)
+                query = str.replace(query,'_offset', str(n))
+                #print(query)
+                cursor.execute(query)
+
+            # update the metadata table
+            query = str.replace(command3,'_NumberOfPartitions', str(N))
+            query = str.replace(query,'_NextPartitionToWrite', str((NextPartitionToWrite+1)%N))
+            cursor.execute(query)
+
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while connecting to PostgreSQL", error)
+
+    finally:
+        if (connection):
+            #cursor.close()
+            #connection.close()
+            print("********RoundRobin_Partition Completed********")
+            print("PostgresSQL Connection is close")
 
 
 def roundrobininsert(ratingstablename, userid, itemid, rating, openconnection):
@@ -210,7 +315,89 @@ def roundrobininsert(ratingstablename, userid, itemid, rating, openconnection):
 
 
 def rangeinsert(ratingstablename, userid, itemid, rating, openconnection):
-    pass
+    
+    user_id = userid
+    movie_id = itemid
+    connection = openconnection
+
+    enable_execute = True
+    print ("In Range_Insert Function")
+
+    command = (""" insert into Ratings (UserID,MovieID,Rating) values(_UserID,_MovieID,_Rating) """)
+    query = str.replace(command,'Ratings', ratingstablename)
+    query = str.replace(query,'_UserID',str(user_id))
+    query = str.replace(query,'_MovieID',str(movie_id))
+    query = str.replace(query,'_Rating',str(rating))
+
+    try:
+        cursor = connection.cursor()
+        # Update the rating table
+        cursor.execute(query)
+
+
+        # find to which parition we should insert the new record based on the rating
+        # handle the following use cases:
+
+        command1 = (""" select * from RangePartitionMetadata where rating > MinRatingInRange and rating < MaxRatingInRange""")
+        query = str.replace(command1,'rating', str(rating))
+
+        if enable_execute == True:
+            selected_partition = 0
+            MinRatingInRange = 0
+            MaxRatingInRange = 0
+            # Update the rating table
+            cursor.execute(query)
+            result = cursor.fetchone()
+            if (result):
+                print("Rating is between bounderies")
+                Id = result[0]
+                MinRatingInRange = result[1]
+                MaxRatingInRange = result[2]
+                selected_partition = Id
+
+            else:
+                command2 = (""" select * from RangePartitionMetadata where rating = MinRatingInRange""")
+                query = str.replace(command2,'rating', str(rating))
+                cursor.execute(query)
+                result = cursor.fetchone()
+                if (result):
+                    print("Rating is on min boundery.  Save the record in the previous partition")
+                    Id = result[0]
+                    MinRatingInRange = result[1]
+                    MaxRatingInRange = result[2]
+                    selected_partition = Id -1
+
+                    # save the rating in the previous partition
+                else:
+                    command3 = (""" select * from RangePartitionMetadata where rating = MaxRatingInRange""")
+                    query = str.replace(command3,'rating', str(rating))
+                    cursor.execute(query)
+                    result = cursor.fetchone()
+                    if (result):
+                        print("Rating is on max boundery. Save the record in the current partition")
+                        Id = result[0]
+                        MinRatingInRange = result[1]
+                        MaxRatingInRange = result[2]
+                        selected_partition = Id
+            
+
+            # now update the partitioned tabled
+            table='range_part'+str(selected_partition)
+            query = str.replace(command,'Ratings', table)
+            query = str.replace(query,'_UserID',str(user_id))
+            query = str.replace(query,'_MovieID',str(movie_id))
+            query = str.replace(query,'_Rating',str(rating))
+            cursor.execute(query)
+    
+    except (Exception, psycopg2.Error) as error:
+        print("Error while connecting to PostgreSQL", error)        
+
+    finally:
+        if (connection):
+            #cursor.close()                
+            #connection.close()
+            print("PostgresSQL Connection is close")
+            print("********Range_Insert Completed********")    
 
 def createDB(dbname='dds_assignment'):
     """
