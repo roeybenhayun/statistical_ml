@@ -343,6 +343,7 @@ def RoundRobin_Insert(table,user_id,movie_id,rating):
             if enable_execute == True:
                 cursor.close()                
             connection.close()
+            print("********RoundRobin_Insert Completed********")
             print("PostgresSQL Connection is close") 
     
     
@@ -366,33 +367,57 @@ def Range_Insert(table,user_id,movie_id,rating):
         # find to which parition we should insert the new record based on the rating
         # handle the following use cases:
 
-        command1 = (""" select * from RangePartitionMetadata, where rating > MinRatingInRange and rating < MaxRatingInRange""")
+        command1 = (""" select * from RangePartitionMetadata where rating > MinRatingInRange and rating < MaxRatingInRange""")
         query = str.replace(command1,'rating', str(rating))
 
         if enable_execute == True:
+            selected_partition = 0
+            MinRatingInRange = 0
+            MaxRatingInRange = 0
             # Update the rating table
             cursor.execute(query)
             result = cursor.fetchone()
             if (result):
-                print("Do somthing here")
-                range_id1 = result['Id']
-                range_id2 = result['Id']
+                print("Rating is between bounderies")
+                Id = result[0]
+                MinRatingInRange = result[1]
+                MaxRatingInRange = result[2]
+                selected_partition = Id
+
             else:
-                command2 = (""" select * from RangePartitionMetadata, where rating = MinRatingInRange""")
+                command2 = (""" select * from RangePartitionMetadata where rating = MinRatingInRange""")
                 query = str.replace(command2,'rating', str(rating))
                 cursor.execute(query)
                 result = cursor.fetchone()
                 if (result):
-                    print("Do somthing here")
-                    range_id1 = result['Id']
-                    range_id2 = result['Id']
+                    print("Rating is on min boundery.  Save the record in the previous partition")
+                    Id = result[0]
+                    MinRatingInRange = result[1]
+                    MaxRatingInRange = result[2]
+                    selected_partition = Id -1
+
+                    # save the rating in the previous partition
                 else:
-                    command3 = (""" select * from RangePartitionMetadata, where rating = MaxRatingInRange""")
+                    command3 = (""" select * from RangePartitionMetadata where rating = MaxRatingInRange""")
                     query = str.replace(command3,'rating', str(rating))
                     cursor.execute(query)
                     result = cursor.fetchone()
                     if (result):
-                        print("Do somthing here")
+                        print("Rating is on max boundery. Save the record in the current partition")
+                        Id = result[0]
+                        MinRatingInRange = result[1]
+                        MaxRatingInRange = result[2]
+                        selected_partition = Id
+            
+
+            # now update the partitioned tabled
+            table='range_part'+str(selected_partition)
+            query = str.replace(command,'Ratings', table)
+            query = str.replace(query,'_UserID',str(user_id))
+            query = str.replace(query,'_MovieID',str(movie_id))
+            query = str.replace(query,'_Rating',str(rating))
+            cursor.execute(query)
+
 
 
 
@@ -404,7 +429,9 @@ def Range_Insert(table,user_id,movie_id,rating):
             if enable_execute == True:
                 cursor.close()                
             connection.close()
-            print("PostgresSQL Connection is close") 
+            print("PostgresSQL Connection is close")
+            print("********Range_Insert Completed********")
+
 
 
 def Delete_Partitions(connection,delete_all,delete_ratings,delete_partitions, delete_metadata):
@@ -519,16 +546,16 @@ if __name__ == '__main__':
     connection = Get_Connection()
     Load_Ratings("ml-10M100K/ratings_small.dat", connection)
 
-    #connection = Get_Connection()
-    #Range_Partition('Ratings',10, connection)
+    connection = Get_Connection()
+    Range_Partition('Ratings',10, connection)
     
-    connection = Get_Connection()
-    RoundRobin_Partition('Ratings',10,connection)
+    #connection = Get_Connection()
+    #RoundRobin_Partition('Ratings',10,connection)
+
+    #connection = Get_Connection()
+    #RoundRobin_Insert('Ratings',1,539,2.56)
 
     connection = Get_Connection()
-    RoundRobin_Insert('Ratings',1,539,2.56)
-
-    #1::539::1.33::838984068
-    #Range_Insert('Ratings',uid,mid,rating)
+    Range_Insert('Ratings',1,539,5.0)
 
     
