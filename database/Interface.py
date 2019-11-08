@@ -79,7 +79,7 @@ def Range_Partition(table,N, connection):
             print("N=1")
             if enable_execute == True:
                 cursor.execute(command)
-                insert_query = str.replace(command3,'_Id',0)
+                insert_query = str.replace(command3,'_Id',str(0))
                 insert_query = str.replace(insert_query,'_MinRatingInRange',str(0.0))
                 insert_query = str.replace(insert_query,'_MaxRatingInRange',str(5.0))
                 cursor.execute(insert_query)
@@ -313,6 +313,10 @@ def RoundRobin_Insert(table,user_id,movie_id,rating):
 
         command = (""" insert into range_partX (UserID,MovieID,Rating) values(_UserID,_MovieID,_Rating) """)
 
+        # handle the one partition use case.
+        if (NumberOfPartitions == 1):
+            NextPartitionToWrite = 0
+        
         query = str.replace(command,'range_partX', ('range_part'+str(NextPartitionToWrite)))
         query = str.replace(query,'_UserID',str(user_id))
         query = str.replace(query,'_MovieID',str(movie_id))
@@ -547,15 +551,15 @@ if __name__ == '__main__':
     Load_Ratings("ml-10M100K/ratings_small.dat", connection)
 
     connection = Get_Connection()
-    Range_Partition('Ratings',10, connection)
+    Range_Partition('Ratings',1, connection)
     
     #connection = Get_Connection()
-    #RoundRobin_Partition('Ratings',10,connection)
+    #RoundRobin_Partition('Ratings',1,connection)
 
     #connection = Get_Connection()
     #RoundRobin_Insert('Ratings',1,539,2.56)
 
     connection = Get_Connection()
-    Range_Insert('Ratings',1,539,5.0)
+    Range_Insert('Ratings',1,539,3.92)
 
     
