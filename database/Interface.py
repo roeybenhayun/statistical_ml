@@ -5,7 +5,7 @@ import sys
 
 
 enable_execute = False
-
+enable_prints = True
 def Range_Partition(table,N, connection):            
 
     try:
@@ -50,7 +50,7 @@ def Range_Partition(table,N, connection):
         insert into range_part0
         select userid,movieid,rating
         from Ratings
-        where rating >=0.0 and rating <= 5.0
+        where rating >=0.0 and rating <=5.0
         """)
         left_boundery = 0.0
 
@@ -64,7 +64,8 @@ def Range_Partition(table,N, connection):
             print(rating_range_list)
             right_boundery = rating_range_list[1]
             query = str.replace(command,'5.0',str(right_boundery))
-            print(query)
+            if enable_prints==True:
+                print(query)
 
 
             if enable_execute == True:
@@ -78,18 +79,20 @@ def Range_Partition(table,N, connection):
                 query = str.replace(query,str(right_boundery), str(current_right_boundery))                
                 query = str.replace(query,str(left_boundery),str(right_boundery))
 
-                print(query)          
+                if enable_prints==True:
+                    print(query)          
                 if enable_execute == True:     
                     cursor.execute(query)
                 query = str.replace(query,table_list[n-1],table_list[n]) 
                 left_boundery = right_boundery
                 right_boundery = current_right_boundery
 
-
             # the last partition
-            query = str.replace(query,str(right_boundery), '5')
+            query = str.replace(query,str(right_boundery), '5.0')
             query = str.replace(query,str(left_boundery), str(right_boundery))
-            print(query)
+
+            if enable_prints==True:
+                print(query)
 
 
 
