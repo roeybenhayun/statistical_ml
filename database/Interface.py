@@ -4,6 +4,8 @@ import psycopg2
 import sys
 
 
+enable_execute = False
+
 def Range_Partition(table,N, connection):            
 
     try:
@@ -17,7 +19,7 @@ def Range_Partition(table,N, connection):
         
         rating_range_list = []
         for n in range(0,N):
-            rating_range = n * (1.0/N)
+            rating_range = n * (5.0/N)
             #print(rating_range)
             rating_range_list.append(rating_range)
 
@@ -37,7 +39,8 @@ def Range_Partition(table,N, connection):
             table_name = table_list[n]            
             query = str.replace(command,'Ratings', table_name)
             #print(query)
-            #cursor.execute(query)
+            if enable_execute == True:
+                cursor.execute(query)
 
 
         print("Executing command - start")
@@ -53,33 +56,46 @@ def Range_Partition(table,N, connection):
 
         if (N==1):
             print("N=1")
-            #cursor.execute(command)
+            if enable_execute == True:
+                cursor.execute(command)
         else:
             #print(command)
             print("N > 1")
+            print(rating_range_list)
             right_boundery = rating_range_list[1]
             query = str.replace(command,'5.0',str(right_boundery))
             print(query)
 
-            #cursor.execute(query)
+
+            if enable_execute == True:
+                cursor.execute(query)
+
             query = str.replace(query,table_list[0],table_list[1]) 
+            query = str.replace(query,'>=','>') 
 
             for n in range (2,N):
                 current_right_boundery = rating_range_list[n]
                 query = str.replace(query,str(right_boundery), str(current_right_boundery))                
                 query = str.replace(query,str(left_boundery),str(right_boundery))
 
-                print(left_boundery)
-                print(right_boundery)
-                print(query)               
-                #cursor.execute(query)
+                print(query)          
+                if enable_execute == True:     
+                    cursor.execute(query)
                 query = str.replace(query,table_list[n-1],table_list[n]) 
-                left_boundery = current_right_boundery
-                
+                left_boundery = right_boundery
+                right_boundery = current_right_boundery
+
+
+            # the last partition
+            query = str.replace(query,str(right_boundery), '5')
+            query = str.replace(query,str(left_boundery), str(right_boundery))
+            print(query)
 
 
 
-        #cursor.execute(command)
+        if enable_execute == True:    
+            cursor.execute(command)
+
         print("Executing command - end")
 
     except (Exception, psycopg2.Error) as error:
@@ -164,7 +180,7 @@ def Load_Ratings(path_to_dataset, connection):
 if __name__ == '__main__':
     connection = Get_Connection()
     #Load_Ratings("ml-10M100K/ratings.dat", connection)
-    Range_Partition('Ratings',4, connection)
+    Range_Partition('Ratings',10, connection)
 
     
    
