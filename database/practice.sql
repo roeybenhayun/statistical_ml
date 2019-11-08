@@ -188,7 +188,7 @@ select userid ROW_NUMBER () over(ORDER BY time) from Ratings
 select * from Ratings limit 20
 
 /* use this for the round robin case to split the data*/
-SELECT * FROM Ratings limit 5 offset 5
+SELECT * FROM Ratings limit 1 offset 0
 
 /*use this for the round robin partition - save this in a metadata table?*/ 
 select count(*) from Ratings
@@ -198,3 +198,8 @@ SELECT EXTRACT(EPOCH FROM INTERVAL '5 days 3 hours')
 SELECT TIMESTAMP WITH TIME ZONE 'epoch' + 982384720.12 * INTERVAL '1 second'
 
 SELECT EXTRACT(EPOCH FROM TIMESTAMP)
+
+
+insert into Ratings (UserID,MovieID,Rating) values(1,539,2.56)
+select * from Ratings where Rating=2.56
+delete from RoundRobinParitionMetadata

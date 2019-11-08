@@ -151,8 +151,9 @@ def Range_Partition(table,N, connection):
 
     finally:
         if (connection):
-            #cursor.close()
+            cursor.close()
             connection.close()
+            print("********Range_Partition Completed********")
             print("PostgresSQL Connection is close")
 
 
@@ -167,7 +168,7 @@ def RoundRobin_Partition(table,N,connection):
             #print (table_name)
             table_list.append(table_name)
 
-        print(table_list)
+        #print(table_list)
         command = (
         """
         create table if not exists RoundRobinParitionedTable (
@@ -180,11 +181,10 @@ def RoundRobin_Partition(table,N,connection):
         # Create the partitioned tables
         for n in range(0,N):            
             table_name = table_list[n]            
-            query = str.replace(command,'RoundRobinParitionedTable', table_name)
-            print(query)
-
-        if enable_execute == True:
+            query = str.replace(command,'RoundRobinParitionedTable', table_name)            
+            if enable_execute == True:
                 cursor.execute(query)
+
 
         command1 = (
             """
@@ -200,12 +200,7 @@ def RoundRobin_Partition(table,N,connection):
         #/*use this for the round robin partition - save this in a metadata table?*/ 
         #select count(*) from Ratings
 
-        # N - is the number of tables.
-        # need to get the size of the table - lets assume the size table_size       
-
-        # table_size = 10000054
-        #table_size = 1054
-        table_size = 12
+ 
 
 
         # use this table as a metadata table to store the next partition to write to 
@@ -213,7 +208,7 @@ def RoundRobin_Partition(table,N,connection):
         command2 = (
         """
         create table if not exists RoundRobinParitionMetadata (
-        NumberOfPartitions int
+        NumberOfPartitions int,
         NextPartitionToWrite int
         )
         """
@@ -223,7 +218,7 @@ def RoundRobin_Partition(table,N,connection):
             cursor.execute(command2)
 
 
-        command3 = (""" insert into RoundRobinParitionMetadata (NumberOfPartitions,NextPartitionToWrite),values(_NumberOfPartitions,_NextPartitionToWrite) """)
+        command3 = (""" insert into RoundRobinParitionMetadata (NumberOfPartitions,NextPartitionToWrite) values(_NumberOfPartitions,_NextPartitionToWrite) """)
 
         if (N==1):
             print("N=1")
@@ -242,7 +237,7 @@ def RoundRobin_Partition(table,N,connection):
             if enable_execute == True:            
                 cursor.execute("select count(*) from Ratings")
                 result = cursor.fetchone()
-                table_size = result['count']
+                table_size = result[0]
 
 
             command = (
@@ -262,7 +257,7 @@ def RoundRobin_Partition(table,N,connection):
                 selected_table = table_list[n%N]
                 query = str.replace(command,'RoundRobinParitionedTable', selected_table)
                 query = str.replace(query,'_offset', str(n))
-                print(query)
+                #print(query)
                 if enable_execute == True:
                     cursor.execute(query)
 
@@ -272,15 +267,15 @@ def RoundRobin_Partition(table,N,connection):
             if enable_execute == True:
                     cursor.execute(query)
 
-            print(query)
 
     except (Exception, psycopg2.Error) as error:
         print("Error while connecting to PostgreSQL", error)
 
     finally:
         if (connection):
-            #cursor.close()
+            cursor.close()
             connection.close()
+            print("********RoundRobin_Partition Completed********")
             print("PostgresSQL Connection is close")
 
     
@@ -291,7 +286,7 @@ def RoundRobin_Insert(table,user_id,movie_id,rating):
     # need to check the table string ?
     # first insert to the rating table
     #     
-    command = (""" insert into Ratings, (UserID,MovieID,Rating),values(_UserID,_MovieID,_Rating) """)
+    command = (""" insert into Ratings (UserID,MovieID,Rating) values(_UserID,_MovieID,_Rating) """)
     query = str.replace(command,'Ratings', table)
     query = str.replace(query,'_UserID',str(user_id))
     query = str.replace(query,'_MovieID',str(movie_id))
@@ -313,10 +308,10 @@ def RoundRobin_Insert(table,user_id,movie_id,rating):
         if enable_execute == True:
             cursor.execute(command)
             result = cursor.fetchone()
-            NumberOfPartitions = result['NumberOfPartitions']
-            NextPartitionToWrite = result['NextPartitionToWrite']
+            NumberOfPartitions = result[0]
+            NextPartitionToWrite = result[1]
 
-        command = (""" insert into range_partX (UserID,MovieID,Rating),values(_UserID,_MovieID,_Rating,) """)
+        command = (""" insert into range_partX (UserID,MovieID,Rating) values(_UserID,_MovieID,_Rating) """)
 
         query = str.replace(command,'range_partX', ('range_part'+str(NextPartitionToWrite)))
         query = str.replace(query,'_UserID',str(user_id))
@@ -326,17 +321,19 @@ def RoundRobin_Insert(table,user_id,movie_id,rating):
         if enable_execute == True:
             cursor.execute(query)
 
+        # remove prev row since we are care only with the last row
+        cursor.execute("delete from RoundRobinParitionMetadata")
         # update the next partitionto write
         NextPartitionToWrite = (NextPartitionToWrite+1)%NumberOfPartitions
         
         # update the metadata table
-        command3 = (""" insert into RoundRobinParitionMetadata (NumberOfPartitions,NextPartitionToWrite),values(_NumberOfPartitions,_NextPartitionToWrite) """)
+        command3 = (""" insert into RoundRobinParitionMetadata (NumberOfPartitions,NextPartitionToWrite) values(_NumberOfPartitions,_NextPartitionToWrite) """)
         query = str.replace(command3,'_NumberOfPartitions', str(NumberOfPartitions))
         query = str.replace(query,'_NextPartitionToWrite', str(NextPartitionToWrite))
 
         if enable_execute == True:
+            # update the metadata table 
             cursor.execute(query)
-
 
     except (Exception, psycopg2.Error) as error:
         print("Error while connecting to PostgreSQL", error)
@@ -353,7 +350,7 @@ def RoundRobin_Insert(table,user_id,movie_id,rating):
 def Range_Insert(table,user_id,movie_id,rating):
     print ("In Range_Insert Function")
 
-    command = (""" insert into Ratings, (UserID,MovieID,Rating),values(_UserID,_MovieID,_Rating) """)
+    command = (""" insert into Ratings (UserID,MovieID,Rating) values(_UserID,_MovieID,_Rating) """)
     query = str.replace(command,'Ratings', table)
     query = str.replace(query,'_UserID',str(user_id))
     query = str.replace(query,'_MovieID',str(movie_id))
@@ -510,6 +507,7 @@ def Load_Ratings(path_to_dataset, connection):
         if (connection):
             cursor.close()
             connection.close()
+            print("********Load_Ratings Completed********")
             print("PostgresSQL Connection is close")
 
 if __name__ == '__main__':
@@ -521,14 +519,16 @@ if __name__ == '__main__':
     connection = Get_Connection()
     Load_Ratings("ml-10M100K/ratings_small.dat", connection)
 
+    #connection = Get_Connection()
+    #Range_Partition('Ratings',10, connection)
+    
     connection = Get_Connection()
-    Range_Partition('Ratings',10, connection)
+    RoundRobin_Partition('Ratings',10,connection)
 
-    #RoundRobin_Partition('Ratings',10,connection)
+    connection = Get_Connection()
+    RoundRobin_Insert('Ratings',1,539,2.56)
 
-    #RoundRobin_Insert('Ratings',1,539,3)
-
-    #1::539::5::838984068
+    #1::539::1.33::838984068
     #Range_Insert('Ratings',uid,mid,rating)
 
     
