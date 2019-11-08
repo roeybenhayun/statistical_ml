@@ -211,7 +211,7 @@ def roundRobinPartition(ratingstablename, numberofpartitions, openconnection):
         table_list = []
         # create table list according to the partition size
         for n in range(0,N):            
-            table_name = 'range_part'+str(n)
+            table_name = 'rrobin_part'+str(n)
             #print (table_name)
             table_list.append(table_name)
 
@@ -234,7 +234,7 @@ def roundRobinPartition(ratingstablename, numberofpartitions, openconnection):
 
         command1 = (
             """
-            insert into range_part0
+            insert into rrobin_part0
             select userid,movieid,rating
             from Ratings
             """
@@ -311,7 +311,80 @@ def roundRobinPartition(ratingstablename, numberofpartitions, openconnection):
 
 
 def roundrobininsert(ratingstablename, userid, itemid, rating, openconnection):
-    pass
+    
+    user_id = userid
+    movie_id = itemid
+    connection = openconnection
+    enable_execute = True
+
+
+    print("In RoundRobin_Insert Function")
+
+    # need to check the table string ?
+    # first insert to the rating table
+    #     
+    command = (""" insert into Ratings (UserID,MovieID,Rating) values(_UserID,_MovieID,_Rating) """)
+    query = str.replace(command,'Ratings', ratingstablename)
+    query = str.replace(query,'_UserID',str(user_id))
+    query = str.replace(query,'_MovieID',str(movie_id))
+    query = str.replace(query,'_Rating',str(rating))
+
+    print(query)
+
+    try:
+        cursor = connection.cursor()
+        
+        if enable_execute == True:
+            cursor.execute(query)
+
+        NextPartitionToWrite = 0
+        NumberOfPartitions = 1
+        # get the round robin metadata table
+        command = (""" select * from RoundRobinParitionMetadata""")
+
+        if enable_execute == True:
+            cursor.execute(command)
+            result = cursor.fetchone()
+            NumberOfPartitions = result[0]
+            NextPartitionToWrite = result[1]
+
+        command = (""" insert into range_partX (UserID,MovieID,Rating) values(_UserID,_MovieID,_Rating) """)
+
+        # handle the one partition use case.
+        if (NumberOfPartitions == 1):
+            NextPartitionToWrite = 0
+        
+        query = str.replace(command,'range_partX', ('rrobin_part0'+str(NextPartitionToWrite)))
+        query = str.replace(query,'_UserID',str(user_id))
+        query = str.replace(query,'_MovieID',str(movie_id))
+        query = str.replace(query,'_Rating',str(rating))
+
+        if enable_execute == True:
+            cursor.execute(query)
+
+        # remove prev row since we are care only with the last row
+        cursor.execute("delete from RoundRobinParitionMetadata")
+        # update the next partitionto write
+        NextPartitionToWrite = (NextPartitionToWrite+1)%NumberOfPartitions
+        
+        # update the metadata table
+        command3 = (""" insert into RoundRobinParitionMetadata (NumberOfPartitions,NextPartitionToWrite) values(_NumberOfPartitions,_NextPartitionToWrite) """)
+        query = str.replace(command3,'_NumberOfPartitions', str(NumberOfPartitions))
+        query = str.replace(query,'_NextPartitionToWrite', str(NextPartitionToWrite))
+
+        if enable_execute == True:
+            # update the metadata table 
+            cursor.execute(query)
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while connecting to PostgreSQL", error)
+    
+    finally:
+        if (connection):
+            #cursor.close()                
+            #connection.close()
+            print("********RoundRobin_Insert Completed********")
+            print("PostgresSQL Connection is close") 
 
 
 def rangeinsert(ratingstablename, userid, itemid, rating, openconnection):

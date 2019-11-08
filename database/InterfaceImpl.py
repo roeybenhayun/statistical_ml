@@ -550,16 +550,16 @@ if __name__ == '__main__':
     connection = Get_Connection()
     Load_Ratings("ml-10M100K/ratings_small.dat", connection)
 
-    connection = Get_Connection()
-    Range_Partition('Ratings',1, connection)
-    
     #connection = Get_Connection()
-    #RoundRobin_Partition('Ratings',1,connection)
+    #Range_Partition('Ratings',1, connection)
+    
+    connection = Get_Connection()
+    RoundRobin_Partition('Ratings',5,connection)
 
     #connection = Get_Connection()
     #RoundRobin_Insert('Ratings',1,539,2.56)
 
-    connection = Get_Connection()
-    Range_Insert('Ratings',1,539,3.92)
+    #connection = Get_Connection()
+    #Range_Insert('Ratings',1,539,3.92)
 
     
