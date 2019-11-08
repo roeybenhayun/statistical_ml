@@ -7,8 +7,10 @@ import sys
 enable_execute = False
 enable_prints = True
 enable_info_prints = False
-def Range_Partition(table,N, connection):            
 
+
+
+def Range_Partition(table,N, connection):            
     try:
         cursor = connection.cursor()
         table_list = []
@@ -155,17 +157,49 @@ def Range_Partition(table,N, connection):
 
 def RoundRobin_Partition(table,N,connection):
     try:
+        cursor = connection.cursor()
+        
+        table_list = []
+        # create table list according to the partition size
+        for n in range(0,N):            
+            table_name = 'range_part'+str(n)
+            #print (table_name)
+            table_list.append(table_name)
+
+        print(table_list)
         command = (
+        """
+        create table if not exists RoundRobinParitionedTable (
+            UserID int,     
+            MovieID int,            
+            Rating numeric                    
+        )
+        """
+        )
+        # Create the partitioned tables
+        for n in range(0,N):            
+            table_name = table_list[n]            
+            query = str.replace(command,'RoundRobinParitionedTable', table_name)
+            print(query)
+
+        if enable_execute == True:
+                cursor.execute(query)
+
+        command1 = (
             """
             insert into range_part0
             select userid,movieid,rating
             from Ratings
             where rating >=0.0 and rating <=5.0
-            """)
-        
+            """
+        )
+
         if (N==1):
+            print("N=1")
             if enable_execute == True:
-                cursor.execute(command)
+                cursor.execute(command1)
+        else:
+            print("N>1")
 
     except (Exception, psycopg2.Error) as error:
         print("Error while connecting to PostgreSQL", error)
@@ -247,7 +281,9 @@ def Load_Ratings(path_to_dataset, connection):
 if __name__ == '__main__':
     connection = Get_Connection()
     #Load_Ratings("ml-10M100K/ratings.dat", connection)
-    Range_Partition('Ratings',10, connection)
+    #Range_Partition('Ratings',10, connection)
+
+    RoundRobin_Partition('Ratings',10,connection)
 
     #1::539::5::838984068
     #Range_Insert('Ratings',uid,mid,rating)
