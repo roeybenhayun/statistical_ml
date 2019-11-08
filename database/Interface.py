@@ -10,7 +10,55 @@ def getOpenConnection(user='postgres', password='1234', dbname='postgres'):
 
 
 def loadRatings(ratingstablename, ratingsfilepath, openconnection):
-    pass
+    
+    print("In Load_Ratings Function")
+    # added a b and c for the special charecter
+    command = (
+        """
+        create table if not exists Ratings (
+            UserID int,
+            a char,
+            MovieID int,
+            b char,
+            Rating numeric,
+            c char,
+            time int
+        )
+        """
+    )
+    query = str.replace(command,'Ratings', ratingstablename)
+    try:
+        cursor = openconnection.cursor()
+
+        # Delete the table if exists
+        cursor.execute("drop table if exists Ratings")
+        #openconnection.commit()
+
+        cursor.execute(query)
+        #openconnection.commit()
+        
+        # no need for the commit since the autocommit is set to true
+        #connection.commit()
+        print("Table created successfully")
+
+        f = open(ratingsfilepath,'r')
+        cursor.copy_from(f,ratingstablename,sep=":")
+        #openconnection.commit()
+
+        # remove the unused columns from the table
+        command = (""" alter table Ratings drop column a, drop column b, drop column c, drop column time """)
+        query = str.replace(command,'Ratings', ratingstablename)
+        cursor.execute(query)
+        #openconnection.commit()
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while connecting to PostgreSQL", error)
+    finally:
+        #if (openconnection):
+        #    cursor.close()
+        #    openconnection.close()
+            print("********Load_Ratings Completed********")
+            print("PostgresSQL Connection is close")
 
 
 def rangePartition(ratingstablename, numberofpartitions, openconnection):
