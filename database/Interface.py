@@ -62,7 +62,143 @@ def loadRatings(ratingstablename, ratingsfilepath, openconnection):
 
 
 def rangePartition(ratingstablename, numberofpartitions, openconnection):
-    pass
+    N = numberofpartitions
+    connection = openconnection
+    try:
+        cursor = connection.cursor()
+        table_list = []
+        # create table list according to the partition size
+        for n in range(0,N):            
+            table_name = 'range_part'+str(n)
+            #print (table_name)
+            table_list.append(table_name)
+        
+        rating_range_list = []
+        for n in range(0,N):
+            rating_range = n * (5.0/N)
+            #print(rating_range)
+            rating_range_list.append(rating_range)
+
+        #print(table_list)
+        #print(rating_range_list)
+
+
+        command = (
+        """
+        create table if not exists RangeParitionedTable (
+            UserID int,     
+            MovieID int,            
+            Rating numeric                    
+        )
+        """)
+
+        command2 = (
+        """
+        create table if not exists RangePartitionMetadata (
+            Id int,            
+            MinRatingInRange numeric,
+            MaxRatingInRange numeric                    
+        )
+        """)
+
+        command3 = (
+            """ insert into RangePartitionMetadata (Id,MinRatingInRange,MaxRatingInRange) values(_Id,_MinRatingInRange,_MaxRatingInRange) """
+            )
+
+        # create the metadata table - use this table to store the range partition information
+        
+        cursor.execute(command2)
+
+        for n in range(0,N):            
+            table_name = table_list[n]            
+            query = str.replace(command,'RangeParitionedTable', table_name)            
+            cursor.execute(query)
+
+
+        print("Executing command - start")
+        
+        command = (
+        """
+        insert into range_part0
+        select userid,movieid,rating
+        from Ratings
+        where rating >=0.0 and rating <=5.0
+        """)
+        left_boundery = 0.0
+
+        if (N==1):
+            print("N=1")
+            cursor.execute(command)
+            insert_query = str.replace(command3,'_Id',str(0))
+            insert_query = str.replace(insert_query,'_MinRatingInRange',str(0.0))
+            insert_query = str.replace(insert_query,'_MaxRatingInRange',str(5.0))
+            cursor.execute(insert_query)
+        else:
+            print("N > 1")
+            id = 0
+            print(rating_range_list)
+            right_boundery = rating_range_list[1]
+            query = str.replace(command,'5.0',str(right_boundery))
+            
+            #print(query)
+
+            print("Left = ",left_boundery, " Right = ", right_boundery)
+            insert_query = str.replace(command3,'_Id',str(id))
+            insert_query = str.replace(insert_query,'_MinRatingInRange',str(left_boundery))
+            insert_query = str.replace(insert_query,'_MaxRatingInRange',str(right_boundery))
+
+            cursor.execute(query)
+            cursor.execute(insert_query)
+
+            
+            query = str.replace(query,table_list[0],table_list[1]) 
+            query = str.replace(query,'>=','>') 
+
+            for n in range (2,N):
+                print("Left = ",left_boundery, " Right = ", right_boundery)
+                current_right_boundery = rating_range_list[n]
+                query = str.replace(query,str(right_boundery), str(current_right_boundery))                
+                query = str.replace(query,str(left_boundery),str(right_boundery))
+
+                #print(query)
+
+                cursor.execute(query)
+
+                query = str.replace(query,table_list[n-1],table_list[n]) 
+                left_boundery = right_boundery
+                right_boundery = current_right_boundery
+
+                insert_query = str.replace(command3,'_Id',str(n-1))
+                insert_query = str.replace(insert_query,'_MinRatingInRange',str(left_boundery))
+                insert_query = str.replace(insert_query,'_MaxRatingInRange',str(right_boundery))
+                
+                #print(insert_query)
+                cursor.execute(insert_query)
+
+            # the last partition
+            query = str.replace(query,str(right_boundery), '5.0')
+            query = str.replace(query,str(left_boundery), str(right_boundery))
+            
+            # update last entry
+            left_boundery=right_boundery
+            right_boundery = 5.0
+            insert_query = str.replace(command3,'_Id',str(N-1))
+            insert_query = str.replace(insert_query,'_MinRatingInRange',str(left_boundery))
+            insert_query = str.replace(insert_query,'_MaxRatingInRange',str(right_boundery))
+        
+            cursor.execute(query)
+            cursor.execute(insert_query)
+
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while connecting to PostgreSQL", error)
+
+    finally:
+        if (connection):
+            #cursor.close()
+            #connection.close()
+            print("********Range_Partition Completed********")
+            print("PostgresSQL Connection is close")
 
 
 def roundRobinPartition(ratingstablename, numberofpartitions, openconnection):
