@@ -181,3 +181,14 @@ BEGIN
    RAISE NOTICE '%,%,counter %', a,b,counter;
    END LOOP;
 END; $$
+
+
+
+select userid ROW_NUMBER () over(ORDER BY time) from Ratings
+select * from Ratings limit 20
+
+/* use this for the round robin case to split the data*/
+SELECT * FROM Ratings limit 5 offset 5
+
+/*use this for the round robin partition - save this in a metadata table?*/ 
+select count(*) from Ratings

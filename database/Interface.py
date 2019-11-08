@@ -190,16 +190,88 @@ def RoundRobin_Partition(table,N,connection):
             insert into range_part0
             select userid,movieid,rating
             from Ratings
-            where rating >=0.0 and rating <=5.0
             """
         )
+
+        #/* use this for the round robin case to split the data*/
+        #SELECT * FROM Ratings limit 5 offset 5
+
+        #/*use this for the round robin partition - save this in a metadata table?*/ 
+        #select count(*) from Ratings
+
+        # N - is the number of tables.
+        # need to get the size of the table - lets assume the size table_size       
+
+        # table_size = 10000054
+        #table_size = 1054
+        table_size = 12
+
+
+        # use this table as a metadata table to store the next partition to write to 
+        # 
+        command2 = (
+        """
+        create table if not exists RoundRobinParitionMetadata (
+        NumberOfPartitions int
+        NextPartitionToWrite int
+        )
+        """
+        )
+        # create the metadata table
+        if enable_execute == True:
+            cursor.execute(command2)
+
+
+        command3 = (""" insert into RoundRobinParitionMetadata (NumberOfPartitions,NextPartitionToWrite),values(_NumberOfPartitions,_NextPartitionToWrite) """)
 
         if (N==1):
             print("N=1")
             if enable_execute == True:
                 cursor.execute(command1)
+            
+            query = str.replace(command3,'_NumberOfPartitions', str(N))
+            query = str.replace(query,'_NextPartitionToWrite', str(N))
+
+            if enable_execute == True:
+                cursor.execute(query)
         else:
             print("N>1")
+
+            # get the size of the table. not sure need it. 
+            if enable_execute == True:            
+                cursor.execute("select count(*) from Ratings")
+                result = cursor.fetchone()
+                table_size = result['count']
+
+
+            command = (
+            """
+            insert into RoundRobinParitionedTable
+            select userid,movieid,rating
+            from Ratings
+            limit 1
+            offset _offset
+            """
+            )
+            
+
+            NextPartitionToWrite = 0
+            for n in range(0,table_size):
+                NextPartitionToWrite = n%N
+                selected_table = table_list[n%N]
+                query = str.replace(command,'RoundRobinParitionedTable', selected_table)
+                query = str.replace(query,'_offset', str(n))
+                print(query)
+                if enable_execute == True:
+                    cursor.execute(query)
+
+            # update the metadata table
+            query = str.replace(command3,'_NumberOfPartitions', str(N))
+            query = str.replace(query,'_NextPartitionToWrite', str((NextPartitionToWrite+1)%N))
+            if enable_execute == True:
+                    cursor.execute(query)
+
+            print(query)
 
     except (Exception, psycopg2.Error) as error:
         print("Error while connecting to PostgreSQL", error)
