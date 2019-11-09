@@ -354,7 +354,7 @@ def roundrobininsert(ratingstablename, userid, itemid, rating, openconnection):
         if (NumberOfPartitions == 1):
             NextPartitionToWrite = 0
         
-        query = str.replace(command,'range_partX', ('rrobin_part0'+str(NextPartitionToWrite)))
+        query = str.replace(command,'range_partX', ('rrobin_part'+str(NextPartitionToWrite)))
         query = str.replace(query,'_UserID',str(user_id))
         query = str.replace(query,'_MovieID',str(movie_id))
         query = str.replace(query,'_Rating',str(rating))
