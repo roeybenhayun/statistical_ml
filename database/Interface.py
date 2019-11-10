@@ -1,69 +1,16 @@
-#!/usr/bin/python2.7
-#
-# Interface for the assignement
-#
 
+#!/usr/bin/python
 import psycopg2
-
-def getOpenConnection(user='postgres', password='1234', dbname='postgres'):
-    return psycopg2.connect("dbname='" + dbname + "' user='" + user + "' host='localhost' password='" + password + "'")
+import sys
 
 
-def loadRatings(ratingstablename, ratingsfilepath, openconnection):
-    
-    print("In Load_Ratings Function")
-    # added a b and c for the special charecter
-    command = (
-        """
-        create table if not exists Ratings (
-            UserID int,
-            a char,
-            MovieID int,
-            b char,
-            Rating numeric,
-            c char,
-            time int
-        )
-        """
-    )
-    query = str.replace(command,'Ratings', ratingstablename)
-    try:
-        cursor = openconnection.cursor()
-
-        # Delete the table if exists
-        cursor.execute("drop table if exists Ratings")
-        #openconnection.commit()
-
-        cursor.execute(query)
-        #openconnection.commit()
-        
-        # no need for the commit since the autocommit is set to true
-        #connection.commit()
-        print("Table created successfully")
-
-        f = open(ratingsfilepath,'r')
-        cursor.copy_from(f,ratingstablename,sep=":")
-        #openconnection.commit()
-
-        # remove the unused columns from the table
-        command = (""" alter table Ratings drop column a, drop column b, drop column c, drop column time """)
-        query = str.replace(command,'Ratings', ratingstablename)
-        cursor.execute(query)
-        #openconnection.commit()
-
-    except (Exception, psycopg2.Error) as error:
-        print("Error while connecting to PostgreSQL", error)
-    finally:
-        #if (openconnection):
-        #    cursor.close()
-        #    openconnection.close()
-            print("********Load_Ratings Completed********")
-            print("PostgresSQL Connection is close")
+enable_execute = True
+enable_prints = True
+enable_info_prints = False
 
 
-def rangePartition(ratingstablename, numberofpartitions, openconnection):
-    N = numberofpartitions
-    connection = openconnection
+
+def Range_Partition(table,N, connection):            
     try:
         cursor = connection.cursor()
         table_list = []
@@ -106,13 +53,15 @@ def rangePartition(ratingstablename, numberofpartitions, openconnection):
             )
 
         # create the metadata table - use this table to store the range partition information
-        
-        cursor.execute(command2)
+        if enable_execute == True:
+            cursor.execute(command2)
 
         for n in range(0,N):            
             table_name = table_list[n]            
-            query = str.replace(command,'RangeParitionedTable', table_name)            
-            cursor.execute(query)
+            query = str.replace(command,'RangeParitionedTable', table_name)
+            #print(query)
+            if enable_execute == True:
+                cursor.execute(query)
 
 
         print("Executing command - start")
@@ -128,27 +77,29 @@ def rangePartition(ratingstablename, numberofpartitions, openconnection):
 
         if (N==1):
             print("N=1")
-            cursor.execute(command)
-            insert_query = str.replace(command3,'_Id',str(0))
-            insert_query = str.replace(insert_query,'_MinRatingInRange',str(0.0))
-            insert_query = str.replace(insert_query,'_MaxRatingInRange',str(5.0))
-            cursor.execute(insert_query)
+            if enable_execute == True:
+                cursor.execute(command)
+                insert_query = str.replace(command3,'_Id',str(0))
+                insert_query = str.replace(insert_query,'_MinRatingInRange',str(0.0))
+                insert_query = str.replace(insert_query,'_MaxRatingInRange',str(5.0))
+                cursor.execute(insert_query)
         else:
             print("N > 1")
             id = 0
             print(rating_range_list)
             right_boundery = rating_range_list[1]
             query = str.replace(command,'5.0',str(right_boundery))
-            
-            #print(query)
+            if enable_info_prints==True:
+                print(query)
 
             print("Left = ",left_boundery, " Right = ", right_boundery)
             insert_query = str.replace(command3,'_Id',str(id))
             insert_query = str.replace(insert_query,'_MinRatingInRange',str(left_boundery))
             insert_query = str.replace(insert_query,'_MaxRatingInRange',str(right_boundery))
 
-            cursor.execute(query)
-            cursor.execute(insert_query)
+            if enable_execute == True:
+                cursor.execute(query)
+                cursor.execute(insert_query)
 
             
             query = str.replace(query,table_list[0],table_list[1]) 
@@ -160,10 +111,11 @@ def rangePartition(ratingstablename, numberofpartitions, openconnection):
                 query = str.replace(query,str(right_boundery), str(current_right_boundery))                
                 query = str.replace(query,str(left_boundery),str(right_boundery))
 
-                #print(query)
+                if enable_info_prints == True:
+                    print(query)
 
-                cursor.execute(query)
-
+                if enable_execute == True:
+                    cursor.execute(query)
                 query = str.replace(query,table_list[n-1],table_list[n]) 
                 left_boundery = right_boundery
                 right_boundery = current_right_boundery
@@ -172,8 +124,11 @@ def rangePartition(ratingstablename, numberofpartitions, openconnection):
                 insert_query = str.replace(insert_query,'_MinRatingInRange',str(left_boundery))
                 insert_query = str.replace(insert_query,'_MaxRatingInRange',str(right_boundery))
                 
-                #print(insert_query)
-                cursor.execute(insert_query)
+                if enable_info_prints == True:
+                    print(insert_query)
+
+                if enable_execute == True:
+                    cursor.execute(insert_query)
 
             # the last partition
             query = str.replace(query,str(right_boundery), '5.0')
@@ -186,8 +141,9 @@ def rangePartition(ratingstablename, numberofpartitions, openconnection):
             insert_query = str.replace(insert_query,'_MinRatingInRange',str(left_boundery))
             insert_query = str.replace(insert_query,'_MaxRatingInRange',str(right_boundery))
         
-            cursor.execute(query)
-            cursor.execute(insert_query)
+            if enable_execute == True:    
+                cursor.execute(query)
+                cursor.execute(insert_query)
 
 
     except (Exception, psycopg2.Error) as error:
@@ -195,23 +151,20 @@ def rangePartition(ratingstablename, numberofpartitions, openconnection):
 
     finally:
         if (connection):
-            #cursor.close()
-            #connection.close()
+            cursor.close()
+            connection.close()
             print("********Range_Partition Completed********")
             print("PostgresSQL Connection is close")
 
 
-def roundRobinPartition(ratingstablename, numberofpartitions, openconnection):
-    N = numberofpartitions
-    connection = openconnection
-    
+def RoundRobin_Partition(table,N,connection):
     try:
         cursor = connection.cursor()
         
         table_list = []
         # create table list according to the partition size
         for n in range(0,N):            
-            table_name = 'rrobin_part'+str(n)
+            table_name = 'range_part'+str(n)
             #print (table_name)
             table_list.append(table_name)
 
@@ -229,16 +182,26 @@ def roundRobinPartition(ratingstablename, numberofpartitions, openconnection):
         for n in range(0,N):            
             table_name = table_list[n]            
             query = str.replace(command,'RoundRobinParitionedTable', table_name)            
-            cursor.execute(query)
+            if enable_execute == True:
+                cursor.execute(query)
 
 
         command1 = (
             """
-            insert into rrobin_part0
+            insert into range_part0
             select userid,movieid,rating
             from Ratings
             """
         )
+
+        #/* use this for the round robin case to split the data*/
+        #SELECT * FROM Ratings limit 5 offset 5
+
+        #/*use this for the round robin partition - save this in a metadata table?*/ 
+        #select count(*) from Ratings
+
+ 
+
 
         # use this table as a metadata table to store the next partition to write to 
         # 
@@ -251,26 +214,30 @@ def roundRobinPartition(ratingstablename, numberofpartitions, openconnection):
         """
         )
         # create the metadata table
-        cursor.execute(command2)
+        if enable_execute == True:
+            cursor.execute(command2)
 
 
         command3 = (""" insert into RoundRobinParitionMetadata (NumberOfPartitions,NextPartitionToWrite) values(_NumberOfPartitions,_NextPartitionToWrite) """)
 
         if (N==1):
             print("N=1")
-            cursor.execute(command1)
+            if enable_execute == True:
+                cursor.execute(command1)
             
             query = str.replace(command3,'_NumberOfPartitions', str(N))
             query = str.replace(query,'_NextPartitionToWrite', str(N))
 
-            cursor.execute(query)
+            if enable_execute == True:
+                cursor.execute(query)
         else:
             print("N>1")
 
             # get the size of the table. not sure need it. 
-            cursor.execute("select count(*) from Ratings")
-            result = cursor.fetchone()
-            table_size = result[0]
+            if enable_execute == True:            
+                cursor.execute("select count(*) from Ratings")
+                result = cursor.fetchone()
+                table_size = result[0]
 
 
             command = (
@@ -291,12 +258,14 @@ def roundRobinPartition(ratingstablename, numberofpartitions, openconnection):
                 query = str.replace(command,'RoundRobinParitionedTable', selected_table)
                 query = str.replace(query,'_offset', str(n))
                 #print(query)
-                cursor.execute(query)
+                if enable_execute == True:
+                    cursor.execute(query)
 
             # update the metadata table
             query = str.replace(command3,'_NumberOfPartitions', str(N))
             query = str.replace(query,'_NextPartitionToWrite', str((NextPartitionToWrite+1)%N))
-            cursor.execute(query)
+            if enable_execute == True:
+                    cursor.execute(query)
 
 
     except (Exception, psycopg2.Error) as error:
@@ -304,27 +273,21 @@ def roundRobinPartition(ratingstablename, numberofpartitions, openconnection):
 
     finally:
         if (connection):
-            #cursor.close()
-            #connection.close()
+            cursor.close()
+            connection.close()
             print("********RoundRobin_Partition Completed********")
             print("PostgresSQL Connection is close")
 
-
-def roundrobininsert(ratingstablename, userid, itemid, rating, openconnection):
     
-    user_id = userid
-    movie_id = itemid
-    connection = openconnection
-    enable_execute = True
 
-
+def RoundRobin_Insert(table,user_id,movie_id,rating):
     print("In RoundRobin_Insert Function")
 
     # need to check the table string ?
     # first insert to the rating table
     #     
     command = (""" insert into Ratings (UserID,MovieID,Rating) values(_UserID,_MovieID,_Rating) """)
-    query = str.replace(command,'Ratings', ratingstablename)
+    query = str.replace(command,'Ratings', table)
     query = str.replace(query,'_UserID',str(user_id))
     query = str.replace(query,'_MovieID',str(movie_id))
     query = str.replace(query,'_Rating',str(rating))
@@ -354,7 +317,7 @@ def roundrobininsert(ratingstablename, userid, itemid, rating, openconnection):
         if (NumberOfPartitions == 1):
             NextPartitionToWrite = 0
         
-        query = str.replace(command,'range_partX', ('rrobin_part'+str(NextPartitionToWrite)))
+        query = str.replace(command,'range_partX', ('range_part'+str(NextPartitionToWrite)))
         query = str.replace(query,'_UserID',str(user_id))
         query = str.replace(query,'_MovieID',str(movie_id))
         query = str.replace(query,'_Rating',str(rating))
@@ -381,31 +344,28 @@ def roundrobininsert(ratingstablename, userid, itemid, rating, openconnection):
     
     finally:
         if (connection):
-            #cursor.close()                
-            #connection.close()
+            if enable_execute == True:
+                cursor.close()                
+            connection.close()
             print("********RoundRobin_Insert Completed********")
             print("PostgresSQL Connection is close") 
-
-
-def rangeinsert(ratingstablename, userid, itemid, rating, openconnection):
     
-    user_id = userid
-    movie_id = itemid
-    connection = openconnection
+    
 
-    enable_execute = True
+def Range_Insert(table,user_id,movie_id,rating):
     print ("In Range_Insert Function")
 
     command = (""" insert into Ratings (UserID,MovieID,Rating) values(_UserID,_MovieID,_Rating) """)
-    query = str.replace(command,'Ratings', ratingstablename)
+    query = str.replace(command,'Ratings', table)
     query = str.replace(query,'_UserID',str(user_id))
     query = str.replace(query,'_MovieID',str(movie_id))
     query = str.replace(query,'_Rating',str(rating))
 
     try:
         cursor = connection.cursor()
-        # Update the rating table
-        cursor.execute(query)
+        if enable_execute == True:
+            # Update the rating table
+            cursor.execute(query)
 
 
         # find to which parition we should insert the new record based on the rating
@@ -461,70 +421,145 @@ def rangeinsert(ratingstablename, userid, itemid, rating, openconnection):
             query = str.replace(query,'_MovieID',str(movie_id))
             query = str.replace(query,'_Rating',str(rating))
             cursor.execute(query)
-    
+
+
+
+
     except (Exception, psycopg2.Error) as error:
         print("Error while connecting to PostgreSQL", error)        
 
     finally:
         if (connection):
-            #cursor.close()                
-            #connection.close()
+            if enable_execute == True:
+                cursor.close()                
+            connection.close()
             print("PostgresSQL Connection is close")
-            print("********Range_Insert Completed********")    
+            print("********Range_Insert Completed********")
 
-def createDB(dbname='dds_assignment'):
-    """
-    We create a DB by connecting to the default user and database of Postgres
-    The function first checks if an existing database exists for a given name, else creates it.
-    :return:None
-    """
-    # Connect to the default database
-    con = getOpenConnection(dbname='postgres')
-    con.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
-    cur = con.cursor()
 
-    # Check if an existing database with the same name exists
-    cur.execute('SELECT COUNT(*) FROM pg_catalog.pg_database WHERE datname=\'%s\'' % (dbname,))
-    count = cur.fetchone()[0]
-    if count == 0:
-        cur.execute('CREATE DATABASE %s' % (dbname,))  # Create the database
-    else:
-        print 'A database named {0} already exists'.format(dbname)
 
-    # Clean up
-    cur.close()
-    con.close()
+def Delete_Partitions(connection,delete_all,delete_ratings,delete_partitions, delete_metadata):
 
-def deletepartitionsandexit(openconnection):
-    cur = openconnection.cursor()
-    cur.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'")
-    l = []
-    for row in cur:
-        l.append(row[0])
-    for tablename in l:
-        cur.execute("drop table if exists {0} CASCADE".format(tablename))
-
-    cur.close()
-
-def deleteTables(ratingstablename, openconnection):
     try:
-        cursor = openconnection.cursor()
-        if ratingstablename.upper() == 'ALL':
-            cursor.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'")
-            tables = cursor.fetchall()
-            for table_name in tables:
-                cursor.execute('DROP TABLE %s CASCADE' % (table_name[0]))
+        cursor = connection.cursor()
+        cursor.execute("SELECT table_schema,table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_schema,table_name")
+        rows = cursor.fetchall()
+
+        if (delete_all==True):
+                for row in rows:
+                    print "dropping table: ", row[1]
+                    command = (""" drop table if exists _table cascade""")
+                    query = str.replace(command,'_table', row[1])
+                    cursor.execute(query)
         else:
-            cursor.execute('DROP TABLE %s CASCADE' % (ratingstablename))
-        openconnection.commit()
-    except psycopg2.DatabaseError, e:
-        if openconnection:
-            openconnection.rollback()
-        print 'Error %s' % e
-    except IOError, e:
-        if openconnection:
-            openconnection.rollback()
-        print 'Error %s' % e
+            if(delete_ratings == True):
+                print("Dropping Ratings table")
+                command = (""" drop table if exists _table cascade""")
+                query = str.replace(command,'_table', "Ratings")
+                cursor.execute(query)
+            if (delete_partitions == True):
+                print("Dropping Partitions tables")
+                command = (""" drop table if exists _partitionTable cascade""")
+                for n in range(0,100):
+                    table = "range_part" + str(n)
+                    query = str.replace(command,'_partitionTable', table)
+                    cursor.execute(query)
+            if (delete_metadata == True):
+                command = (""" drop table if exists RangePartitionMetadata cascade""")
+                cursor.execute(command)
+                command = (""" drop table if exists RoundRobinParitionMetadata cascade""")
+                cursor.execute(command)
+                print("Dropping Metadata tables")
+
+    
+    except (Exception, psycopg2.Error) as error:
+        print("Error while connecting to PostgreSQL", error)
+
     finally:
-        if cursor:
+        if (connection):
+            cursor.close()                
+            connection.close()
+            print("PostgresSQL Connection is close") 
+
+
+
+def Get_Connection():
+    connection = psycopg2.connect(user = "roeybenhayun",
+                                  password = "",
+                                  host = "127.0.0.1",
+                                  port = "5432",
+                                  database = "postgres")
+    connection.autocommit=True
+    return connection
+
+
+def Load_Ratings(path_to_dataset, connection):
+
+    print("In Load_Ratings Function")
+    # added a b and c for the special charecter
+    command = (
+        """
+        create table if not exists Ratings (
+            UserID int,
+            a char,
+            MovieID int,
+            b char,
+            Rating numeric,
+            c char,
+            time int
+        )
+        """
+    )
+    try:
+        cursor = connection.cursor()
+        #print ( connection.get_dsn_parameters(),"\n")
+        #cursor.execute("SELECT version();")
+        #record = cursor.fetchone()
+        #print("You are connected to - ", record,"\n")
+
+
+        # Delete the table if exists
+        cursor.execute("drop table if exists Ratings")
+        cursor.execute(command)
+        
+        # no need for the commit since the autocommit is set to true
+        #connection.commit()
+        print("Table created successfully")
+
+        f = open(path_to_dataset,'r')
+        cursor.copy_from(f,'Ratings',sep=":")
+        #connection.commit()
+
+        # remove the unused columns from the table
+        cursor.execute("alter table Ratings drop column a, drop column b, drop column c, drop column time")
+    except (Exception, psycopg2.Error) as error:
+        print("Error while connecting to PostgreSQL", error)
+    finally:
+        if (connection):
             cursor.close()
+            connection.close()
+            print("********Load_Ratings Completed********")
+            print("PostgresSQL Connection is close")
+
+if __name__ == '__main__':
+    connection = Get_Connection()
+    
+    # Delete all tables
+    Delete_Partitions(connection,True,False,False,False)
+
+    connection = Get_Connection()
+    Load_Ratings("ml-10M100K/ratings_small.dat", connection)
+
+    #connection = Get_Connection()
+    #Range_Partition('Ratings',1, connection)
+    
+    connection = Get_Connection()
+    RoundRobin_Partition('Ratings',5,connection)
+
+    #connection = Get_Connection()
+    #RoundRobin_Insert('Ratings',1,539,2.56)
+
+    #connection = Get_Connection()
+    #Range_Insert('Ratings',1,539,3.92)
+
+    
