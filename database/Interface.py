@@ -484,11 +484,18 @@ def Delete_Partitions(connection,delete_all,delete_ratings,delete_partitions, de
 
 
 def Get_Connection():
-    connection = psycopg2.connect(user = "roeybenhayun",
-                                  password = "",
+    #connection = psycopg2.connect(user = "roeybenhayun",
+    #                              password = "",
+    #                              host = "127.0.0.1",
+    #                              port = "5432",
+    #                              database = "postgres")
+
+    connection = psycopg2.connect(user = "postgres",
+                                  password = "1234",
                                   host = "127.0.0.1",
                                   port = "5432",
-                                  database = "postgres")
+                                  database = "sandbox")
+
     connection.autocommit=True
     return connection
 
