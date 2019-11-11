@@ -16,6 +16,7 @@ def getOpenConnection(user='postgres', password='1234', dbname='postgres'):
     return psycopg2.connect("dbname='" + dbname + "' user='" + user + "' host='localhost' password='" + password + "'")
 
 
+
 def createDB(dbname=DATABASE_NAME):
     """
     We create a DB by connecting to the default user and database of Postgres

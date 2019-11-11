@@ -47,7 +47,7 @@ if __name__ == '__main__':
 
         # Calling RangeQuery
         #print "Performing Range Query"
-        Assignment2.RangeQuery('ratings',1.3 ,4, con);
+        Assignment2.RangeQuery('ratings',3.3 ,5, con);
         #Assignment2.RangeQuery('ratings',1,4,con);
 
         # Calling PointQuery

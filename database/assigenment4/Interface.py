@@ -23,10 +23,23 @@ def RangeQuery(ratingsTableName, ratingMinValue, ratingMaxValue, openconnection)
     # first need to get the partitions
     # for all partition - if in range, save the id
     #
+    range_rating_table='RangeRatingsPart'
+    round_robin_table='RoundRobinRatingsPart'
+    range__query_file_name='RangeQueryOut.txt'
+
+    f_out = open(range__query_file_name, 'w')
+    
+
+
+
     partition_list = []
     cursor = openconnection.cursor()
     cursor.execute("select * from rangeratingsmetadata")
     rows = cursor.fetchall()
+
+
+    cursor.copy_to(f_out, 'rangeratingspart3', sep=",")
+    cursor.copy_to(f_out, 'rangeratingspart2', sep=",")
     id = 0
     for row in rows:
         partition_id = row[0]
@@ -48,14 +61,62 @@ def RangeQuery(ratingsTableName, ratingMinValue, ratingMaxValue, openconnection)
         
         id = id +1
 
-    print(partition_list)
+    print(partition_list[0])
+    print(partition_list[1])
     
     # size of the list should be 2
     # check for the same partition
     # min 
     # max
-    for partition in range(partition_list[0],partition_list[1]):
-        print(partition)
+
+    for partition in range(partition_list[0],(partition_list[1]+1)):
+        print("In partition", partition)
+        if partition == partition_list[0]:
+            command = (""" select * from _rangeratingspart where rating >= _ratingMinValue""")
+            query = str.replace(command,'_rangeratingspart', range_rating_table+str(partition))
+            query = str.replace(query,'_ratingMinValue', str(ratingMinValue))
+            print(query)
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            for row in rows:
+                print "********"
+                val1 = row[0]
+                val2 = row[1]
+                val3 = row[2]
+                #print val1,val2, val3
+                s1 = 'RangeRatingsPart'+ str(partition)+ ','+str(val1) + ',' + str(val2) + ',' + str(val3)
+                print s1
+                print("first partition")
+        elif partition == partition_list[1]:
+            command = (""" select * from _rangeratingspart where rating <= _ratingMaxValue""")
+            query = str.replace(command,'_rangeratingspart', range_rating_table+str(partition))
+            query = str.replace(query,'_ratingMaxValue', str(ratingMaxValue))
+            print(query)
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            for row in rows:
+                val1 = row[0]
+                val2 = row[1]
+                val3 = row[2]
+                #print val1,val2, val3
+                s1 = 'RangeRatingsPart'+ str(partition)+ ','+str(val1) + ',' + str(val2) + ',' + str(val3)
+                print s1
+            print ("last partition")
+        else:
+            command = (""" select * from _rangeratingspart""")
+            query = str.replace(command,'_rangeratingspart', range_rating_table+str(partition))
+            print(query)
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            for row in rows:
+                val1 = row[0]
+                val2 = row[1]
+                val3 = row[2]
+                #print val1,val2, val3
+                s1 = 'RangeRatingsPart'+ str(partition)+ ','+str(val1) + ',' + str(val2) + ',' + str(val3)
+                print s1
+            print ("middle partitions")
+        
 
 
 
