@@ -203,3 +203,5 @@ SELECT EXTRACT(EPOCH FROM TIMESTAMP)
 insert into Ratings (UserID,MovieID,Rating) values(1,539,2.56)
 select * from range_part0 where Rating=3.92
 delete from RoundRobinParitionMetadata
+
+drop table parallelSortOutputTable

@@ -84,9 +84,12 @@ if __name__ == '__main__':
         print "Creating Database named as " + DATABASE_NAME
         createDB();
 
+        
         # Getting connection to the database
         print "Getting connection from the " + DATABASE_NAME + " database"
         con = getOpenConnection(dbname=DATABASE_NAME);
+
+        deleteTables('ALL', con);
 
         #Loading two tables ratings and movies
         Assignment1.loadRatings('ratings', 'ratings.txt', con);
@@ -95,8 +98,9 @@ if __name__ == '__main__':
         # Calling ParallelSort
         print "Performing Parallel Sort"
         Assignment3.ParallelSort('ratings', 'Rating', 'parallelSortOutputTable', con);
-        #a = raw_input("Check in database and once you are done, press enter to delete all tables: ");
-        #deleteTables('ALL', con);
+        a = raw_input("Check in database and once you are done, press enter to delete all tables: ");
+        print("Delete all tables")
+        deleteTables('ALL', con);
 
         #Loading two tables ratings and movies
         #Assignment1.loadRatings('ratings', 'ratings.txt', con);

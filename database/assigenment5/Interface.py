@@ -15,6 +15,7 @@ index_ = []
 value_ = []
 
 
+
 def thread_function(unsorted_list, start_index, batch_size,column_index):
     
     sublist = unsorted_list[start_index:start_index+batch_size]    
@@ -38,31 +39,92 @@ def ParallelSort (InputTable, SortingColumnName, OutputTable, openconnection):
     print("Start Parallel Sort")
     global value_
     global index_
-    save_to_file = False
+    save_to_file = True
     number_of_workers = 5
     unsorted_list = []
 
-
+    #raise ValueError(InputTable,SortingColumnName,OutputTable)
     if save_to_file == True:
         point__query_file_name='parallel_sort_results.txt'
         f_out = open(point__query_file_name, 'w')
     
+
+
+    #command3 = (""" select column_name, data_type from INFORMATION_SCHEMA.COLUMNS where table_name = InputTable """ )
+
     # get the size of the list to be sorted
     cursor = openconnection.cursor()
-    #command = (""" SELECT SortingColumnName from InputTable """)
-    #query = str.replace(command,'SortingColumnName', SortingColumnName)
-    # get the table
-    cursor.execute("SELECT * FROM ratings LIMIT 0")
-    column_names = [desc[0] for desc in cursor.description]
-    print column_names
 
-    return
-    #print SortingColumnName
+    command = (
+        """
+        create table if not exists OutputTable (
+            userid int,
+            movieid int,
+            rating numeric
+        )
+        """
+    )
+    
+    #command3 = (""" select column_name, data_type from INFORMATION_SCHEMA.COLUMNS where table_name = InputTable """ )
+    #command3 = str.replace(command3,'InputTable', InputTable)
+    #cursor.execute(command3)
+    #openconnection.commit()
+    #row = cursor.fetchone()
+    #print row
+    #return
+
+    # get the table
+    command2 = (""" SELECT * FROM InputTable LIMIT 0 """)
+    command2 = str.replace(command2,'InputTable', InputTable)
+    cursor.execute(command2)
+    openconnection.commit()
+    column_names = [desc[0] for desc in cursor.description]
+    print (column_names[0])
+    print (column_names[1])
+    print (column_names[2])
+    
+    
+    create_table_query = str.replace(command,'OutputTable', OutputTable)    
+    print(create_table_query)
+    
+    
+
+    create_table_query = str.replace(create_table_query,'userid', column_names[0])
+    create_table_query = str.replace(create_table_query,'movieid', column_names[1])
+    create_table_query = str.replace(create_table_query,'rating', column_names[2])
+    cursor.execute(create_table_query)
+
+    
+    openconnection.commit()
+
+
+    insert_command = (""" insert into OutputTable (userid,movieid,rating) values(val1,val2,val3) """)
+    insert_query = str.replace(insert_command,'OutputTable', OutputTable)
+    insert_query = str.replace(insert_query,'userid', column_names[0])
+    insert_query = str.replace(insert_query,'movieid', column_names[1])
+    insert_query = str.replace(insert_query,'rating', column_names[2])
+
+
+    #raise ValueError(create_table_query + ' ' +insert_query)
+    #print(insert_query)
+
+    #return
+
+    column_id = 0
+    for i in range (0,len(column_names)):
+        if (column_names[i].lower() == SortingColumnName.lower()):
+            print SortingColumnName.lower()
+            column_id = i
+            break
+    
+    #return
+    print SortingColumnName
     #return
     
     command = (""" SELECT * from InputTable """)
     query = str.replace(command,'InputTable', InputTable)
     print(query)
+    #raise ValueError(query)
     cursor.execute(query)
     rows = cursor.fetchall()
 
@@ -82,25 +144,36 @@ def ParallelSort (InputTable, SortingColumnName, OutputTable, openconnection):
                 length = batch_size+leftover  
 
             start_index = index * batch_size                        
-            x = threading.Thread(target=thread_function, args=(unsorted_list, start_index, length,2))
+            x = threading.Thread(target=thread_function, args=(unsorted_list, start_index, length,column_id))
             threads.append(x)
             x.start()
         
         for index, thread in enumerate(threads):
             thread.join()
 
-        min_value = value_[0][2]
+        min_value = value_[0][column_id]
         min_index = 0
         for i in range (1,number_of_workers):
-            temp_min = value_[i][2]
+            temp_min = value_[i][column_id]
             if temp_min < min_value:
                 min_value = temp_min
                 min_index = i
 
-
         if save_to_file == True:
             f_out.write(str(value_[min_index]))
             f_out.write('\n')
+
+        insert_query_ = str.replace(insert_query,'val1', str(value_[min_index][0]))
+        insert_query_ = str.replace(insert_query_,'val2', str(value_[min_index][1]))
+        insert_query_ = str.replace(insert_query_,'val3', str(value_[min_index][2]))
+
+        if (value_[min_index][0] == 4 and value_[min_index][1] == 3527 and value_[min_index][2] == 1.0):
+            print("FFFOUND......")
+            #raise ValueError("FFFOUND......")
+
+        print(insert_query_)
+        cursor.execute(insert_query_)
+        openconnection.commit()
 
         delete_index = index_[min_index]
         del unsorted_list[delete_index]
@@ -109,17 +182,28 @@ def ParallelSort (InputTable, SortingColumnName, OutputTable, openconnection):
         batch_size = len(unsorted_list)/number_of_workers
         leftover = len(unsorted_list)%number_of_workers
 
-
+        last = []
         # loop break condition
         if (len(unsorted_list) <= 5):
             print unsorted_list
             print index_
             print("BREAK LOOP.... size = ", len(unsorted_list))
             print("LEFTOVER... size = ", leftover)
-            last = Sort(unsorted_list,2)
+            print("COLUMNID... size = ", column_id)
+            last = Sort(unsorted_list,column_id)
             print (last)
             sort = False
         
+        for i in range(0,len(last)):
+            insert_query_ = str.replace(insert_query,'val1', str(last[i][0]))
+            insert_query_ = str.replace(insert_query_,'val2', str(last[i][1]))
+            insert_query_ = str.replace(insert_query_,'val3', str(last[i][2]))
+            cursor.execute(insert_query_)
+            openconnection.commit()
+            print(insert_query_)
+            f_out.write(str(last[i]))
+            f_out.write('\n')
+
         index_ = []
         value_ = []
     
@@ -135,9 +219,6 @@ def Sort(sub_li,column):
     # sublist lambda has been used 
     return(sorted(sub_li, key = lambda x: x[column]))     
   
-
-
-
 
 def ParallelJoin (InputTable1, InputTable2, Table1JoinColumn, Table2JoinColumn, OutputTable, openconnection):
     #Implement ParallelJoin Here.
