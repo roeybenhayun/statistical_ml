@@ -38,25 +38,25 @@ def ParallelSort (InputTable, SortingColumnName, OutputTable, openconnection):
     print("Start Parallel Sort")
     global value_
     global index_
-
-
     save_to_file = False
+    number_of_workers = 5
+    unsorted_list = []
+
 
     if save_to_file == True:
         point__query_file_name='parallel_sort_results.txt'
         f_out = open(point__query_file_name, 'w')
     
-    number_of_workers = 5
-    unsorted_list = []
-
     # get the size of the list to be sorted
     cursor = openconnection.cursor()
     #command = (""" SELECT SortingColumnName from InputTable """)
     #query = str.replace(command,'SortingColumnName', SortingColumnName)
     # get the table
-    #cursor.execute("SELECT * FROM ratings LIMIT 0")
-    #colnames = [desc[0] for desc in cursor.description]
-    #print colnames
+    cursor.execute("SELECT * FROM ratings LIMIT 0")
+    column_names = [desc[0] for desc in cursor.description]
+    print column_names
+
+    return
     #print SortingColumnName
     #return
     
@@ -88,7 +88,6 @@ def ParallelSort (InputTable, SortingColumnName, OutputTable, openconnection):
         
         for index, thread in enumerate(threads):
             thread.join()
-
 
         min_value = value_[0][2]
         min_index = 0
