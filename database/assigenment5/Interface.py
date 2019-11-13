@@ -22,7 +22,7 @@ def thread_function(unsorted_list, start_index, batch_size):
     sublist_min = min(sublist)
     min_index = sublist.index(sublist_min)
     value_.append(sublist_min)
-    index_.append(start_index*batch_size + min_index)
+    index_.append(min_index)
     l.release()
 
 # Donot close the connection inside this file i.e. do not perform openconnection.close()
@@ -96,7 +96,6 @@ def ParallelSort (InputTable, SortingColumnName, OutputTable, openconnection):
             f_out.write(s1)
             f_out.write('\n')
             # remove the items from the list
-            print(" VAL = ", val)
             del unsorted_list[val]
             orig_size = orig_size - 1
             
