@@ -40,21 +40,16 @@ def ParallelSort (InputTable, SortingColumnName, OutputTable, openconnection):
     print("Start Parallel Sort")
     global value_
     global index_
-    warnings.warn("Warning...........Message")
 
     
     save_to_file = True
     number_of_workers = 5
     unsorted_list = []
 
-    #raise ValueError(InputTable,SortingColumnName,OutputTable)
     if save_to_file == True:
         point__query_file_name='parallel_sort_results.txt'
         f_out = open(point__query_file_name, 'w')
     
-
-
-    #command3 = (""" select column_name, data_type from INFORMATION_SCHEMA.COLUMNS where table_name = InputTable """ )
 
     # get the size of the list to be sorted
     cursor = openconnection.cursor()
@@ -64,18 +59,11 @@ def ParallelSort (InputTable, SortingColumnName, OutputTable, openconnection):
         create table if not exists OutputTable (
             userid int,
             movieid int,
-            rating numeric
+            rating real
         )
         """
     )
     
-    #command3 = (""" select column_name, data_type from INFORMATION_SCHEMA.COLUMNS where table_name = InputTable """ )
-    #command3 = str.replace(command3,'InputTable', InputTable)
-    #cursor.execute(command3)
-    #openconnection.commit()
-    #row = cursor.fetchone()
-    #print row
-    #return
 
     # get the table
     command2 = (""" SELECT * FROM InputTable LIMIT 0 """)
@@ -89,9 +77,6 @@ def ParallelSort (InputTable, SortingColumnName, OutputTable, openconnection):
     print (column_names[1])
     print (column_names[2])
     
-    # this the the grader output - userid ttt movieid ffff rating
-    # this is local run output - userid ttt movieid ffff rating
-    #raise ValueError(column_names[0]+" ttt " + column_names[1] + " ffff " +column_names[2])
     
     create_table_query = str.replace(command,'OutputTable', OutputTable)    
     print(create_table_query)
@@ -114,26 +99,19 @@ def ParallelSort (InputTable, SortingColumnName, OutputTable, openconnection):
     insert_query = str.replace(insert_query,'rating', column_names[2])
 
 
-    #raise ValueError(create_table_query + ' ' +insert_query)
-    #print(insert_query)
-
-    #return
 
     column_id = 0
     for i in range (0,len(column_names)):
         if (column_names[i].lower() == SortingColumnName.lower()):
-            print SortingColumnName.lower()
+            #print SortingColumnName.lower()
             column_id = i
             break
     
-    #return
     print SortingColumnName
-    #return
     
     command = (""" SELECT * from InputTable """)
     query = str.replace(command,'InputTable', InputTable)
     print(query)
-    #raise ValueError(query)
     cursor.execute(query)
     openconnection.commit()
 
@@ -179,12 +157,7 @@ def ParallelSort (InputTable, SortingColumnName, OutputTable, openconnection):
         insert_query_ = str.replace(insert_query_,'val2', str(value_[min_index][1]))
         insert_query_ = str.replace(insert_query_,'val3', str(value_[min_index][2]))
 
-        if (value_[min_index][0] == 4 and value_[min_index][1] == 3527 and value_[min_index][2] == 1.0):
-            print("FFFOUND......")
-            # get this from the grader
-            #insert into parallelSortOutputTable (userid,movieid,rating) values(4,3527,1.0)
-            #print(insert_query_)
-            #raise ValueError(insert_query_)
+
 
         print(insert_query_)
         cursor.execute(insert_query_)
