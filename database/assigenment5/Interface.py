@@ -9,12 +9,13 @@ import sys
 import logging
 import time 
 import threading
+import warnings
 
 l = threading.Lock()
 index_ = []
 value_ = []
 
-
+called = 0
 
 def thread_function(unsorted_list, start_index, batch_size,column_index):
     
@@ -39,6 +40,9 @@ def ParallelSort (InputTable, SortingColumnName, OutputTable, openconnection):
     print("Start Parallel Sort")
     global value_
     global index_
+    warnings.warn("Warning...........Message")
+
+    
     save_to_file = True
     number_of_workers = 5
     unsorted_list = []
@@ -79,10 +83,15 @@ def ParallelSort (InputTable, SortingColumnName, OutputTable, openconnection):
     cursor.execute(command2)
     openconnection.commit()
     column_names = [desc[0] for desc in cursor.description]
+    print("LEN = ", len(column_names))
+    #raise ValueError(str(len(column_names)))
     print (column_names[0])
     print (column_names[1])
     print (column_names[2])
     
+    # this the the grader output - userid ttt movieid ffff rating
+    # this is local run output - userid ttt movieid ffff rating
+    #raise ValueError(column_names[0]+" ttt " + column_names[1] + " ffff " +column_names[2])
     
     create_table_query = str.replace(command,'OutputTable', OutputTable)    
     print(create_table_query)
@@ -126,7 +135,10 @@ def ParallelSort (InputTable, SortingColumnName, OutputTable, openconnection):
     print(query)
     #raise ValueError(query)
     cursor.execute(query)
+    openconnection.commit()
+
     rows = cursor.fetchall()
+    
 
     # all the rows
     unsorted_list = rows
@@ -169,7 +181,10 @@ def ParallelSort (InputTable, SortingColumnName, OutputTable, openconnection):
 
         if (value_[min_index][0] == 4 and value_[min_index][1] == 3527 and value_[min_index][2] == 1.0):
             print("FFFOUND......")
-            #raise ValueError("FFFOUND......")
+            # get this from the grader
+            #insert into parallelSortOutputTable (userid,movieid,rating) values(4,3527,1.0)
+            #print(insert_query_)
+            #raise ValueError(insert_query_)
 
         print(insert_query_)
         cursor.execute(insert_query_)
@@ -201,16 +216,27 @@ def ParallelSort (InputTable, SortingColumnName, OutputTable, openconnection):
             cursor.execute(insert_query_)
             openconnection.commit()
             print(insert_query_)
-            f_out.write(str(last[i]))
-            f_out.write('\n')
+            if save_to_file == True:
+                f_out.write(str(last[i]))
+                f_out.write('\n')
 
         index_ = []
         value_ = []
     
     if save_to_file == True:      
         f_out.close()
+    
         
+    command = (""" SELECT * from OutputTable where movieid = 3527 """)
+    select_query_ = str.replace(command,'OutputTable', OutputTable)
+    cursor.execute(select_query_)
+    openconnection.commit()
+    rows = cursor.fetchone()
+    print(str(type(rows[0])))
+    print(str(type(rows[1])))
+    print(str(type(rows[2])))
 
+    print rows
 
 
 def Sort(sub_li,column):   
@@ -222,7 +248,7 @@ def Sort(sub_li,column):
 
 def ParallelJoin (InputTable1, InputTable2, Table1JoinColumn, Table2JoinColumn, OutputTable, openconnection):
     #Implement ParallelJoin Here.
-    pass # Remove this once you are done with implementation
+    print "PJOIN" # Remove this once you are done with implementation
 
 
 ################### DO NOT CHANGE ANYTHING BELOW THIS #############################

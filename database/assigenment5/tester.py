@@ -98,9 +98,10 @@ if __name__ == '__main__':
         # Calling ParallelSort
         print "Performing Parallel Sort"
         Assignment3.ParallelSort('ratings', 'Rating', 'parallelSortOutputTable', con);
+
         a = raw_input("Check in database and once you are done, press enter to delete all tables: ");
         print("Delete all tables")
-        deleteTables('ALL', con);
+        #deleteTables('ALL', con);
 
         #Loading two tables ratings and movies
         #Assignment1.loadRatings('ratings', 'ratings.txt', con);
