@@ -92,24 +92,24 @@ if __name__ == '__main__':
         deleteTables('ALL', con);
 
         #Loading two tables ratings and movies
-        Assignment1.loadRatings('ratings', 'ratings.txt', con);
-        loadMovies('movies', 'movies.txt', con);
+        #Assignment1.loadRatings('ratings', 'ratings.txt', con);
+        #loadMovies('movies', 'movies.txt', con);
 
         # Calling ParallelSort
-        print "Performing Parallel Sort"
-        Assignment3.ParallelSort('ratings', 'Rating', 'parallelSortOutputTable', con);
+        #print "Performing Parallel Sort"
+        #Assignment3.ParallelSort('ratings', 'Rating', 'parallelSortOutputTable', con);
 
-        a = raw_input("Check in database and once you are done, press enter to delete all tables: ");
-        print("Delete all tables")
+        #a = raw_input("Check in database and once you are done, press enter to delete all tables: ");
+        #print("Delete all tables")
         #deleteTables('ALL', con);
 
         #Loading two tables ratings and movies
-        #Assignment1.loadRatings('ratings', 'ratings.txt', con);
-        #loadMovies('movies', 'movies.txt', con);
+        Assignment1.loadRatings('ratings', 'ratings.txt', con);
+        loadMovies('movies', 'movies.txt', con);
         # Calling ParallelJoin
-        #print "Performing Parallel Join"
-        #Assignment3.ParallelJoin('ratings', 'movies', 'MovieId', 'MovieId1', 'parallelJoinOutputTable', con);
-        #a = raw_input("Check corresponding table content in database and once you are done, press enter to delete all tables: ");
+        print "Performing Parallel Join"
+        Assignment3.ParallelJoin('ratings', 'movies', 'MovieId', 'MovieId1', 'parallelJoinOutputTable', con);
+        a = raw_input("Check corresponding table content in database and once you are done, press enter to delete all tables: ");
         #deleteTables('ALL', con);
 
         if con:

@@ -15,7 +15,8 @@ l = threading.Lock()
 index_ = []
 value_ = []
 
-called = 0
+
+
 
 def thread_function(unsorted_list, start_index, batch_size,column_index):
     
@@ -217,11 +218,112 @@ def Sort(sub_li,column):
     # key is set to sort using second element of  
     # sublist lambda has been used 
     return(sorted(sub_li, key = lambda x: x[column]))     
-  
+
+
+
+#l = threading.Lock()
+#index_ = []
+#value_ = []
+
+
+def join_thread_function(item, table2, start_index, batch_size,table1_join_column, table2_join_column):
+    
+    sublist1 = table2[start_index:start_index+batch_size]    
+    l.acquire()
+    
+    for i in range(0,len(sublist)):
+        v = sublist[i][column_index]
+        if(item == v):
+            v_index = i
+            value_.append(sublist[v_index])
+            index_.append(start_index+v_index)
+
+    l.release()
 
 def ParallelJoin (InputTable1, InputTable2, Table1JoinColumn, Table2JoinColumn, OutputTable, openconnection):
-    #Implement ParallelJoin Here.
-    print "PJOIN" # Remove this once you are done with implementation
+
+    print "In parallel join"
+    global value_
+    global index_
+
+    number_of_workers = 5
+    unsorted_list = []
+
+    cursor = openconnection.cursor()
+    #
+    list1_ = []
+    list2_ = []
+
+    # get the table
+    command = (""" SELECT * FROM InputTable LIMIT 0 """)
+    command = str.replace(command,'InputTable', InputTable1)
+    cursor.execute(command)
+    openconnection.commit()
+    column_names = [desc[0] for desc in cursor.description]
+    print("LEN = ", len(column_names))
+    #raise ValueError(str(len(column_names)))
+    print (column_names[0])
+    print (column_names[1])
+    print (column_names[2])
+
+    command = str.replace(command,InputTable1, InputTable2)
+    cursor.execute(command)
+    openconnection.commit()
+    column_names = [desc[0] for desc in cursor.description]
+    print("LEN = ", len(column_names))
+    #raise ValueError(str(len(column_names)))
+    print (column_names[0])
+    print (column_names[1])
+    print (column_names[2])
+
+    command = (""" SELECT * FROM InputTable """)
+    command = str.replace(command,"InputTable", InputTable1)
+    cursor.execute(command)
+    openconnection.commit()
+    rows1 = cursor.fetchall()
+    print(rows1)
+
+    command = (""" SELECT * FROM InputTable """)
+    command = str.replace(command,"InputTable", InputTable2)
+    cursor.execute(command)
+    openconnection.commit()
+    rows2 = cursor.fetchall()
+    print(rows2)
+
+
+    unsorted_list2 = rows2
+    batch_size = len(unsorted_list)/number_of_workers
+    leftover = len(unsorted_list)%number_of_workers
+
+
+    unsorted_list1 = rows1
+
+    for i in range(0,len(unsorted_list1)):un
+
+        new_tuple = unsorted_list1[i]
+
+        for index in range(0,number_of_workers):
+            length = batch_size
+            
+            if (index == number_of_workers-1):
+                length = batch_size+leftover  
+
+            start_index = index * batch_size                        
+            x = threading.Thread(target=join_thread_function, args=(new_tuple,unsorted_list1, start_index, length,Table1JoinColumn,Table1JoinColumn))
+            threads.append(x)
+            x.start()
+        
+
+    for index, thread in enumerate(threads):
+        thread.join()
+
+
+    # post processing here
+    
+
+
+
+
 
 
 ################### DO NOT CHANGE ANYTHING BELOW THIS #############################
