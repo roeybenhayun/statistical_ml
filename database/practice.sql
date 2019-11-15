@@ -207,3 +207,5 @@ delete from RoundRobinParitionMetadata
 drop table parallelSortOutputTable
 
 select * from ratings where movieid=1
+
+insert into parallelJoinOutputTable (userid,movieid,rating,movieid1,title,genre) values(1,1,5.0,1,'Toy Story (1995)','Animation|Childrens|Comedy') 

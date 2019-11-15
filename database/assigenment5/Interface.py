@@ -221,25 +221,7 @@ def Sort(sub_li,column):
 
 
 
-#l = threading.Lock()
-#index_ = []
-#value_ = []
 
-def foo(item, table2, start_index, batch_size,table1_join_column, table2_join_column):
-    print "In FOO"
-    sublist1 = table2[start_index:start_index+batch_size]    
-    
-    for i in range(0,len(sublist1)):
-        v = sublist1[i][table1_join_column]
-        #print ("V = ", v)
-        
-        if(item[table2_join_column] == v):
-            v_index = i
-            value_.append(sublist1[v_index])
-            index_.append(start_index+v_index)
-    
-    print "VALUE = ", value_
-    print "INDEX = ",index_
 
 
 def join_thread_function(item, table2, start_index, batch_size,table1_join_column, table2_join_column):
@@ -268,13 +250,51 @@ def ParallelJoin (InputTable1, InputTable2, Table1JoinColumn, Table2JoinColumn, 
     list1_ = []
     list2_ = []
 
-    # get the table
+    # get the input table columns
     command = (""" SELECT * FROM InputTable LIMIT 0 """)
     command = str.replace(command,'InputTable', InputTable1)
     cursor.execute(command)
     openconnection.commit()
     column_names = [desc[0] for desc in cursor.description]
     print("LEN = ", len(column_names))
+    print (column_names[0])
+    print (column_names[1])
+    print (column_names[2])
+
+    command = str.replace(command,InputTable1, InputTable2)
+    cursor.execute(command)
+    openconnection.commit()
+    column_names_ = [desc[0] for desc in cursor.description]
+    print("LEN = ", len(column_names_))
+    print (column_names_[0])
+    print (column_names_[1])
+    print (column_names_[2])
+
+    # Create the output table
+    command = (
+        """
+        create table if not exists OutputTable (
+            userid int,
+            movieid int,
+            rating real,
+            movieid1 int,
+            title varchar(100),
+            genre varchar(100)
+        )
+        """
+    )
+
+    command = str.replace(command,"OutputTable", OutputTable)
+    cursor.execute(command)
+    openconnection.commit()
+
+    # build the insert command
+    insert_command = (""" insert into OutputTable (userid,movieid,rating,movieid1,title,genre) values(val1,val2,val3,val4,val5,val6) """)
+    insert_query = str.replace(insert_command,'OutputTable', OutputTable)
+    #insert_query = str.replace(insert_query,'userid', column_names[0])
+    #insert_query = str.replace(insert_query,'movieid', column_names[1])
+    #insert_query = str.replace(insert_query,'rating', column_names[2])
+
 
     column_id = 0
     for i in range (0,len(column_names)):
@@ -296,34 +316,24 @@ def ParallelJoin (InputTable1, InputTable2, Table1JoinColumn, Table2JoinColumn, 
     # get the column indexes
     Table2JoinColumnIndex = column_id
 
-    #raise ValueError(str(len(column_names)))
-    print (column_names[0])
-    print (column_names[1])
-    print (column_names[2])
 
-    command = str.replace(command,InputTable1, InputTable2)
-    cursor.execute(command)
-    openconnection.commit()
-    column_names = [desc[0] for desc in cursor.description]
-    print("LEN = ", len(column_names))
-    #raise ValueError(str(len(column_names)))
-    print (column_names[0])
-    print (column_names[1])
-    print (column_names[2])
 
+    # get the tabla data here
     command = (""" SELECT * FROM InputTable """)
     command = str.replace(command,"InputTable", InputTable1)
     cursor.execute(command)
     openconnection.commit()
     rows1 = cursor.fetchall()
-    #print(rows1)
 
     command = (""" SELECT * FROM InputTable """)
     command = str.replace(command,"InputTable", InputTable2)
     cursor.execute(command)
     openconnection.commit()
     rows2 = cursor.fetchall()
-    #print(rows2)
+
+
+    # create output table here
+
 
 
     unsorted_list2 = rows2
@@ -357,13 +367,30 @@ def ParallelJoin (InputTable1, InputTable2, Table1JoinColumn, Table2JoinColumn, 
         # post processing here
 
         if(len(value_)!=0):
-            print("VALUE =  ", value_)
-            print("NEW TUPLE = ", new_tuple)
-            print ("LENGTH OF INDEXES = ", len(index_))
-            print ("INDEXES = ", index_)
+            #print("VALUE =  ", value_)
+            #print ("VALUE LEN = ", len(value_))
+            #print("NEW TUPLE = ", new_tuple)
+            #print ("LENGTH OF INDEXES = ", len(index_))
+            #print ("INDEXES = ", index_)
             for i in range(0,len(index_)):
+                # insert here the the joined tabled
+                #insert_query = str.replace(insert_command,'OutputTable', OutputTable)
+                # VERY UGLY - no time need to submit. doing very quick and dirty
+                insert_query_ = str.replace(insert_query,'val1',str(value_[i][0]))
+                insert_query_ = str.replace(insert_query_,'val2',str(value_[i][1]))
+                insert_query_ = str.replace(insert_query_,'val3',str(value_[i][2]))
+                insert_query_ = str.replace(insert_query_,'val4',str(new_tuple[0]))
+                new_tuple_str = "'"+ new_tuple[1] + "'"
+                insert_query_ = str.replace(insert_query_,'val5',new_tuple_str)
+                new_tuple_str = "'"+ new_tuple[2] + "'"
+                insert_query_ = str.replace(insert_query_,'val6',new_tuple_str)
+                #print(insert_query_)
+                cursor.execute(insert_query_)
+                openconnection.commit()
+                
                 del unsorted_list1[index_[i]]
-    
+
+            
         if (len(unsorted_list1) <= 5):
             print "EXIT LOOP"
             value_ = []
@@ -378,7 +405,7 @@ def ParallelJoin (InputTable1, InputTable2, Table1JoinColumn, Table2JoinColumn, 
         value_ = []
         index_ = []
     
-    print "Outside Loop"
+    print "Outside Loop. No matches"
     print ("LIST1 LENGTH = ", len(unsorted_list1))
     print ("LIST2 LENGTH = ",len(unsorted_list2))
 
