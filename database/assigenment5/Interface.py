@@ -127,6 +127,7 @@ def ParallelSort (InputTable, SortingColumnName, OutputTable, openconnection):
     sort = True
     threads = list()
 
+
     while(sort==True):
         for index in range(0,number_of_workers):
             length = batch_size
@@ -222,18 +223,31 @@ def Sort(sub_li,column):
 
 
 
-
-
 def join_thread_function(item, table2, start_index, batch_size,table1_join_column, table2_join_column):
     
     sublist1 = table2[start_index:start_index+batch_size]    
     l.acquire()
+    #print "DDDDD", table1_join_column = 1, "GGGGGG", table2_join_column = 0
+    # item - (17, 'Sense and Sensibility (1995)', 'Drama|Romance')
+    # v = (10, 1015, 3.0) - 
+    
+
     for i in range(0,len(sublist1)):
-        v = sublist1[i][table1_join_column]                
+        v = sublist1[i][table1_join_column]
+        #print item
+        #print sublist1[i]
         if(item[table2_join_column] == v):
-            v_index = i
-            value_.append(sublist1[v_index])
-            index_.append(start_index+v_index)
+            if item[table2_join_column] == 480:
+                print "FOUND MOVIE... "
+                print "START INDEX = ", start_index, "OFFSET = ", i
+            if item[table2_join_column] == 260:
+                print "FOUND MOVIE 260... "
+                print "START INDEX = ", start_index, "OFFSET = ", i
+            #print "gggg", item
+            #print "ffff : ", sublist1[i][table1_join_column]
+            value_.append(sublist1[i])
+            #print "START INDEX = ", start_index, "OFFSET = ", i
+            index_.append(start_index+i)
     l.release()
 
 def ParallelJoin (InputTable1, InputTable2, Table1JoinColumn, Table2JoinColumn, OutputTable, openconnection):
@@ -242,13 +256,18 @@ def ParallelJoin (InputTable1, InputTable2, Table1JoinColumn, Table2JoinColumn, 
     global value_
     global index_
 
+    save_to_file = False
+    if save_to_file == True:
+        point__query_file_name='debug.txt'
+        f_out = open(point__query_file_name, 'w')
+
+    #4, 480, 4.0, 480, 'Jurassic Park (1993)', 'Action|Adventure|Sci-Fi') 
     number_of_workers = 5
-    unsorted_list = []
+
 
     cursor = openconnection.cursor()
     #
-    list1_ = []
-    list2_ = []
+
 
     # get the input table columns
     command = (""" SELECT * FROM InputTable LIMIT 0 """)
@@ -291,10 +310,6 @@ def ParallelJoin (InputTable1, InputTable2, Table1JoinColumn, Table2JoinColumn, 
     # build the insert command
     insert_command = (""" insert into OutputTable (userid,movieid,rating,movieid1,title,genre) values(val1,val2,val3,val4,val5,val6) """)
     insert_query = str.replace(insert_command,'OutputTable', OutputTable)
-    #insert_query = str.replace(insert_query,'userid', column_names[0])
-    #insert_query = str.replace(insert_query,'movieid', column_names[1])
-    #insert_query = str.replace(insert_query,'rating', column_names[2])
-
 
     column_id = 0
     for i in range (0,len(column_names)):
@@ -316,8 +331,6 @@ def ParallelJoin (InputTable1, InputTable2, Table1JoinColumn, Table2JoinColumn, 
     # get the column indexes
     Table2JoinColumnIndex = column_id
 
-
-
     # get the tabla data here
     command = (""" SELECT * FROM InputTable """)
     command = str.replace(command,"InputTable", InputTable1)
@@ -331,11 +344,7 @@ def ParallelJoin (InputTable1, InputTable2, Table1JoinColumn, Table2JoinColumn, 
     openconnection.commit()
     rows2 = cursor.fetchall()
 
-
     # create output table here
-
-
-
     unsorted_list2 = rows2
 
 
@@ -344,10 +353,33 @@ def ParallelJoin (InputTable1, InputTable2, Table1JoinColumn, Table2JoinColumn, 
     batch_size = len(unsorted_list1)/number_of_workers
     leftover = len(unsorted_list1)%number_of_workers
 
+    print "SIZE = ",batch_size
+    print "LENGTH = ", leftover
+    index_ = []
+    value_ = []
 
     for i in range(0,len(unsorted_list2)):
+        if (unsorted_list2[i][0] == 661):
+            print("INDEX = ", i , "VALUES=", unsorted_list2[i])
+#
+    #for i in range(0,len(unsorted_list1)):
+    #    if (unsorted_list1[i][1] == 480):
+    #        print("INDEX = ", i , "VALUES=", unsorted_list1[i])
 
+    #return
+    deleted_tuples = 0
+
+    temp_list = []
+    for i in range(0,len(unsorted_list2)):
+
+        #print "II = ", i
         new_tuple = unsorted_list2[i]
+
+        if (new_tuple[0] == 480):
+            print "THIS IS THE MOVIE"
+            for i in range(0,len(unsorted_list1)):
+                if (unsorted_list1[i][1] == 480):
+                    print("INDEX = ", i , "VALUES=", unsorted_list1[i])
 
         for index in range(0,number_of_workers):
             length = batch_size
@@ -356,23 +388,32 @@ def ParallelJoin (InputTable1, InputTable2, Table1JoinColumn, Table2JoinColumn, 
                 length = batch_size+leftover  
 
             start_index = index * batch_size
+            
+            str_ = "START= " + str(start_index) + " LENGTH =  " + str(length) + " LEFTOVER = " + str(leftover) +  " TOTAL LENGTH = " + str(len(unsorted_list1)) + " DELETE TUPLES = " + str(deleted_tuples)
+            deleted_tuples = 0
+            #print str_
+
+            if save_to_file == True:
+                f_out.write(str_)
+                f_out.write('\n')
+
             x = threading.Thread(target=join_thread_function, args=(new_tuple,unsorted_list1, start_index, length,Table1JoinColumnIndex,Table2JoinColumnIndex))
             threads.append(x)
             x.start()
         
 
-        for index, thread in enumerate(threads):
+        for index, thread in enumerate(threads):            
+            #print "WAIT FOR THREADS"
             thread.join()
-
-        # post processing here
+            
+        
+        threads = list()
 
         if(len(value_)!=0):
-            #print("VALUE =  ", value_)
-            #print ("VALUE LEN = ", len(value_))
-            #print("NEW TUPLE = ", new_tuple)
-            #print ("LENGTH OF INDEXES = ", len(index_))
-            #print ("INDEXES = ", index_)
+                         
             for i in range(0,len(index_)):
+                #if len(value_) == 1:
+                #    print "LEN IS 1" 
                 # insert here the the joined tabled
                 #insert_query = str.replace(insert_command,'OutputTable', OutputTable)
                 # VERY UGLY - no time need to submit. doing very quick and dirty
@@ -384,13 +425,27 @@ def ParallelJoin (InputTable1, InputTable2, Table1JoinColumn, Table2JoinColumn, 
                 insert_query_ = str.replace(insert_query_,'val5',new_tuple_str)
                 new_tuple_str = "'"+ new_tuple[2] + "'"
                 insert_query_ = str.replace(insert_query_,'val6',new_tuple_str)
-                #print(insert_query_)
+
                 cursor.execute(insert_query_)
                 openconnection.commit()
-                
-                del unsorted_list1[index_[i]]
+                if unsorted_list1[index_[i]][1] == 480:
+                    print unsorted_list1[index_[i]]
+                    print "FOUND THE DELETED MOVIEW, in index ->", index_[i]
+                    print "VALUE_ : ", value_
+                    print "INDEX_ : ", index_[i]
+                    #FOUND THE DELETED MOVIEW, in index -> 228
+                    # note - 260 is the movie name
+                    #VALUE_ :  [(1, 260, 4.0), (3, 260, 5.0), (4, 260, 5.0), (10, 260, 5.0)]
+                    #INDEX_ :  [41, 191, 228, 873]
+                #del unsorted_list1[index_[i]]
+                #deleted_tuples = deleted_tuples + 1
 
-            
+        value_ = []
+        index_ = []
+        #batch_size = len(unsorted_list1)/number_of_workers
+        #leftover = len(unsorted_list1)%number_of_workers
+        
+
         if (len(unsorted_list1) <= 5):
             print "EXIT LOOP"
             value_ = []
@@ -402,8 +457,7 @@ def ParallelJoin (InputTable1, InputTable2, Table1JoinColumn, Table2JoinColumn, 
         #print ("LIST2 INDEX = ", i)
         #del unsorted_list2[i]
 
-        value_ = []
-        index_ = []
+
     
     print "Outside Loop. No matches"
     print ("LIST1 LENGTH = ", len(unsorted_list1))

@@ -209,3 +209,13 @@ drop table parallelSortOutputTable
 select * from ratings where movieid=1
 
 insert into parallelJoinOutputTable (userid,movieid,rating,movieid1,title,genre) values(1,1,5.0,1,'Toy Story (1995)','Animation|Childrens|Comedy') 
+
+
+
+select * from movies where title='Jurassic Park (1993)'
+select * from movies where title='James and the Giant Peach (1996)'
+
+select * from paralleljoinoutputtable where title='Jurassic Park (1993)'
+select * from paralleljoinoutputtable where title='James and the Giant Peach (1996)'
+select * from ratings where movieid=480
+select * from ratings where movieid=1956
