@@ -225,19 +225,33 @@ def Sort(sub_li,column):
 #index_ = []
 #value_ = []
 
+def foo(item, table2, start_index, batch_size,table1_join_column, table2_join_column):
+    print "In FOO"
+    sublist1 = table2[start_index:start_index+batch_size]    
+    
+    for i in range(0,len(sublist1)):
+        v = sublist1[i][table1_join_column]
+        #print ("V = ", v)
+        
+        if(item[table2_join_column] == v):
+            v_index = i
+            value_.append(sublist1[v_index])
+            index_.append(start_index+v_index)
+    
+    print "VALUE = ", value_
+    print "INDEX = ",index_
+
 
 def join_thread_function(item, table2, start_index, batch_size,table1_join_column, table2_join_column):
     
     sublist1 = table2[start_index:start_index+batch_size]    
     l.acquire()
-    
-    for i in range(0,len(sublist)):
-        v = sublist[i][column_index]
-        if(item == v):
+    for i in range(0,len(sublist1)):
+        v = sublist1[i][table1_join_column]                
+        if(item[table2_join_column] == v):
             v_index = i
-            value_.append(sublist[v_index])
+            value_.append(sublist1[v_index])
             index_.append(start_index+v_index)
-
     l.release()
 
 def ParallelJoin (InputTable1, InputTable2, Table1JoinColumn, Table2JoinColumn, OutputTable, openconnection):
@@ -261,6 +275,27 @@ def ParallelJoin (InputTable1, InputTable2, Table1JoinColumn, Table2JoinColumn, 
     openconnection.commit()
     column_names = [desc[0] for desc in cursor.description]
     print("LEN = ", len(column_names))
+
+    column_id = 0
+    for i in range (0,len(column_names)):
+        if (column_names[i].lower() == Table1JoinColumn.lower()):
+            #print SortingColumnName.lower()
+            column_id = i
+            break
+
+    # get the column indexes
+    Table1JoinColumnIndex = column_id
+
+    column_id = 0
+    for i in range (0,len(column_names)):
+        if (column_names[i].lower() == Table2JoinColumn.lower()):
+            #print SortingColumnName.lower()
+            column_id = i
+            break
+    
+    # get the column indexes
+    Table2JoinColumnIndex = column_id
+
     #raise ValueError(str(len(column_names)))
     print (column_names[0])
     print (column_names[1])
@@ -281,26 +316,28 @@ def ParallelJoin (InputTable1, InputTable2, Table1JoinColumn, Table2JoinColumn, 
     cursor.execute(command)
     openconnection.commit()
     rows1 = cursor.fetchall()
-    print(rows1)
+    #print(rows1)
 
     command = (""" SELECT * FROM InputTable """)
     command = str.replace(command,"InputTable", InputTable2)
     cursor.execute(command)
     openconnection.commit()
     rows2 = cursor.fetchall()
-    print(rows2)
+    #print(rows2)
 
 
     unsorted_list2 = rows2
-    batch_size = len(unsorted_list)/number_of_workers
-    leftover = len(unsorted_list)%number_of_workers
 
 
+    threads = list()
     unsorted_list1 = rows1
+    batch_size = len(unsorted_list1)/number_of_workers
+    leftover = len(unsorted_list1)%number_of_workers
 
-    for i in range(0,len(unsorted_list1)):un
 
-        new_tuple = unsorted_list1[i]
+    for i in range(0,len(unsorted_list2)):
+
+        new_tuple = unsorted_list2[i]
 
         for index in range(0,number_of_workers):
             length = batch_size
@@ -308,20 +345,44 @@ def ParallelJoin (InputTable1, InputTable2, Table1JoinColumn, Table2JoinColumn, 
             if (index == number_of_workers-1):
                 length = batch_size+leftover  
 
-            start_index = index * batch_size                        
-            x = threading.Thread(target=join_thread_function, args=(new_tuple,unsorted_list1, start_index, length,Table1JoinColumn,Table1JoinColumn))
+            start_index = index * batch_size
+            x = threading.Thread(target=join_thread_function, args=(new_tuple,unsorted_list1, start_index, length,Table1JoinColumnIndex,Table2JoinColumnIndex))
             threads.append(x)
             x.start()
         
 
-    for index, thread in enumerate(threads):
-        thread.join()
+        for index, thread in enumerate(threads):
+            thread.join()
 
+        # post processing here
 
-    # post processing here
+        if(len(value_)!=0):
+            print("VALUE =  ", value_)
+            print("NEW TUPLE = ", new_tuple)
+            print ("LENGTH OF INDEXES = ", len(index_))
+            print ("INDEXES = ", index_)
+            for i in range(0,len(index_)):
+                del unsorted_list1[index_[i]]
     
+        if (len(unsorted_list1) <= 5):
+            print "EXIT LOOP"
+            value_ = []
+            index_ = []
+            break
+            # leftover
+        #print ("LIST1 LENGTH = ", len(unsorted_list1))
+        #print ("LIST2 LENGTH = ",len(unsorted_list2))
+        #print ("LIST2 INDEX = ", i)
+        #del unsorted_list2[i]
 
+        value_ = []
+        index_ = []
+    
+    print "Outside Loop"
+    print ("LIST1 LENGTH = ", len(unsorted_list1))
+    print ("LIST2 LENGTH = ",len(unsorted_list2))
 
+    # handle leftovers here
 
 
 

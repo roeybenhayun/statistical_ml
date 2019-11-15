@@ -205,3 +205,5 @@ select * from range_part0 where Rating=3.92
 delete from RoundRobinParitionMetadata
 
 drop table parallelSortOutputTable
+
+select * from ratings where movieid=1
