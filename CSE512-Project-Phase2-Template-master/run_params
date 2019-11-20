@@ -1,0 +1,39 @@
+
+
+
+	* Output file path: ```/Users/ubuntu/Downloads/output.csv```
+	* Range query data file path, query window: ```/Users/ubuntu/Downloads/arealm.csv -155.940114,19.081331,-155.618917,19.5307```
+	* Range join query data file path, range join query window data file path: ```/Users/ubuntu/Downloads/arealm.csv /Users/ubuntu/Downloads/zcta510.csv```
+	* Distance query data file path, query point, distance: ```/Users/ubuntu/Downloads/arealm.csv -88.331492,32.324142 10```
+	* Distance join query data A file path, distance join query data B file path, distance: ```/Users/ubuntu/Downloads/arealm.csv /Users/ubuntu/Downloads/arealm.csv 10```
+	* Range query data file path, query window: ```/Users/ubuntu/Downloads/arealm.csv -155.940114,19.081331,-155.618917,19.5307```
+	* Range join query data file path, range join query window data file path: ```/Users/ubuntu/Downloads/arealm.csv /Users/ubuntu/Downloads/zcta510.csv```
+	* Distance query data file path, query point, distance: ```/Users/ubuntu/Downloads/arealm.csv -88.331492,32.324142 10```
+	* Distance join query data A file path, distance join query data B file path, distance: ```/Users/ubuntu/Downloads/arealm.csv /Users/ubuntu/Downloads/arealm.csv 10```
+
+
+
+
+    sbt "run
+    /home/roey/projects/scala_examples/CSE512-Project-Phase2-Template-master/src/resources/arealm10000.csv
+    /home/roey/projects/scala_examples/CSE512-Project-Phase2-Template-master/src/resources/zcta10000.csv"
+
+
+	sbt "run
+	/home/roey/projects/scala_examples/CSE512-Project-Phase2-Template-master/output.csv
+	/home/roey/projects/scala_examples/CSE512-Project-Phase2-Template-master/src/resources/arealm10000.csv -155.940114,19.081331,-155.618917,19.5307
+	/home/roey/projects/scala_examples/CSE512-Project-Phase2-Template-master/src/resources/arealm10000.csv /home/roey/projects/scala_examples/CSE512-Project-Phase2-Template-master/src/resources/zcta10000.csv
+    /home/roey/projects/scala_examples/CSE512-Project-Phase2-Template-master/src/resources/arealm10000.csv -88.331492,32.324142 10
+  	/home/roey/projects/scala_examples/CSE512-Project-Phase2-Template-master/src/resources/arealm10000.csv /home/roey/projects/scala_examples/CSE512-Project-Phase2-Template-master/src/resources/arealm10000.csv 10
+  	/home/roey/projects/scala_examples/CSE512-Project-Phase2-Template-master/src/resources/arealm10000.csv -155.940114,19.081331,-155.618917,19.5307
+	/home/roey/projects/scala_examples/CSE512-Project-Phase2-Template-master/src/resources/arealm10000.csv /home/roey/projects/scala_examples/CSE512-Project-Phase2-Template-master/src/resources/zcta10000.csv
+  	/home/roey/projects/scala_examples/CSE512-Project-Phase2-Template-master/src/resources/arealm10000.csv -88.331492,32.324142 10
+ 	/home/roey/projects/scala_examples/CSE512-Project-Phase2-Template-master/src/resources/arealm10000.csv /home/roey/projects/scala_examples/CSE512-Project-Phase2-Template-master/src/resources/arealm10000.csv 10"
+
+
+
+
+
+
+
+

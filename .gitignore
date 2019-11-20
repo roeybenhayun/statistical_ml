@@ -4,3 +4,10 @@ docs
 figures/
 data
 k_means_clustering/data
+CSE512-Project-Phase2-Template-master/target
+*.pyc
+CSE512-Project-Phase2-Template-master/.idea
+CSE512-Project-Phase2-Template-master/project/*
+CSE512-Project-Phase2-Template-master/spark-warehouse/*
+CSE512-Project-Phase2-Template-master/project
+CSE512-Project-Phase2-Template-master/project/build.properties
