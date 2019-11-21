@@ -11,8 +11,13 @@ object bla{
 object SpatialQuery extends App{
 
   // use defined function to calc if point is in rectangle
-  def ST_Contains(pointString:String, queryRectangle:String): Boolean = {
-    println(pointString + "-----" + queryRectangle)
+  def ST_Contains(queryRectangle:String, pointString:String): Boolean = {
+    //println(pointString + "-----" + queryRectangle)
+    var rect = pointString.split(",")
+    var point = queryRectangle.split(",")
+
+
+
     true
   }
 
