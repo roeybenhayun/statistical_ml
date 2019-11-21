@@ -89,6 +89,7 @@ object SparkSQLExample {
       // print
       println("PARAM0 : " + queryParam(0) + "   PARAM1 : " + queryParam(1))
       queryResult = SpatialQuery.runRangeQuery(spark, queryParam(0), queryParam(1))
+      println("RANGE QUERY RESULTS = " + queryResult)
     }
     else if (queryName.equalsIgnoreCase("RangeJoinQuery"))
     {

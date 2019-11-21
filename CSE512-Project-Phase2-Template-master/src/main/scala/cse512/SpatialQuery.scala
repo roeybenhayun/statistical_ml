@@ -2,26 +2,41 @@ package cse512
 
 import org.apache.spark.sql.SparkSession
 
+
+object bla{
+  def foo(s:String):Boolean = {
+    true
+  }
+}
 object SpatialQuery extends App{
 
-
+  // use defined function to calc if point is in rectangle
   def ST_Contains(pointString:String, queryRectangle:String): Boolean = {
-    println("GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGggggggggg")
+    println(pointString + "-----" + queryRectangle)
     true
   }
 
-
   def runRangeQuery(spark: SparkSession, arg1: String, arg2: String): Long = {
 
+    println ("RUN RANGE QUERY")
+
     val pointDf = spark.read.format("com.databricks.spark.csv").option("delimiter","\t").option("header","false").load(arg1);
+    pointDf.show()
     pointDf.createOrReplaceTempView("point")
+    pointDf.show()
+
+    // Register the user defined function.
+    spark.udf.register("ST_Contains",ST_Contains _)
 
     // YOU NEED TO FILL IN THIS USER DEFINED FUNCTION
-    spark.udf.register("ST_Contains",(queryRectangle:String, pointString:String)=>((true)))
+    //spark.udf.register("ST_Contains",(queryRectangle:String, pointString:String)=>((false)))
+
 
     val resultDf = spark.sql("select * from point where ST_Contains('"+arg2+"',point._c0)")
     resultDf.show()
+    println ("RUN RANGE QUERY - 2"+ resultDf.count())
 
+    return 10
     return resultDf.count()
   }
 
