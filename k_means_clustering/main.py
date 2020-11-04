@@ -1,12 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
-
 from kMeansClustering import KMeansClustering
-
+from 
 def main():
-
-    objective_function_1 = []
-    objective_function_2 = []
 
     # Datasets source
     # P. Fränti and S. Sieranoja
@@ -18,7 +14,7 @@ def main():
     datasets = {
     "a1" : {
         "path" : "datasets/a_sets",
-        "name" : "a3.txt",        
+        "name" : "a1.txt",        
         "format" : "txt"
         },
     "a2" : {
@@ -28,7 +24,7 @@ def main():
         },
     "a3" : {
         "path" : "datasets/a_sets",
-        "name" : "a1.txt",        
+        "name" : "a3.txt",        
         "format" : "txt"
         },
     "s1" : {
@@ -58,50 +54,53 @@ def main():
         },
     }
 
-    dataset = "a1"
-    
-    kMeansClustering = KMeansClustering(datasets[dataset]["path"],datasets[dataset]["name"], datasets[dataset]["format"])
+    dataset = "a2"
+    plot_dataset = False
+
+    kMeansClustering = KMeansClustering(datasets[dataset]["path"],datasets[dataset]["name"], datasets[dataset]["format"],plot_dataset)
     
     start_cluster = 2
     number_of_clusters = 15
     number_of_runs = 1
     
-    calc_sse = False
+    one_shot = False
+    calc_sse = True
 
     k = np.arange(2,number_of_clusters+1)
     plot_objective_function = True
 
-    
-    # 1 for Random initialization (fast, might lead to a suboptimal solution)
-    # 2 for kmeans+++ initialization (slow. better then random init)
-    centroid_init_strategy = 1
-    
-    kMeansClustering.setup(centroid_init_strategy,number_of_clusters)
-    kMeansClustering.compute(True)
 
-
-    if (calc_sse == True):
+    if (one_shot == True):
+        kMeansClustering.setup(KMeansClustering.RANDOM_INIT,number_of_clusters)
+        kMeansClustering.compute(False)
+        kMeansClustering.get_sse()
+        kMeansClustering.get_seperation()
         kMeansClustering.cleanup()
 
-        if (plot_objective_function == True):
-            plt.title('Elbow Graph')
-            plt.xlabel('Number of Clusters K')
-            plt.ylabel('Objective Function Value')
 
-        for run in range(1, number_of_runs+1):
+    # Finding the number of clusters using Elbow Method
+    if (calc_sse == True):
+        objective_function = []
+        centroid_init_strategy = KMeansClustering.RANDOM_INIT
+        kMeansClustering.cleanup()
+
+        for run in range(0, number_of_runs):
             for _k in range(start_cluster,number_of_clusters+1):
                 kMeansClustering.setup(centroid_init_strategy,_k)
-                objective_function_1.append(kMeansClustering.compute())
+                kMeansClustering.compute(False)
+                objective_function.append(kMeansClustering.get_sse())
+                kMeansClustering.cleanup()
 
             if (plot_objective_function == True):
+                plt.title('Elbow Graph')
+                plt.xlabel('Number of Clusters K')
+                plt.ylabel('Objective Function Value')
                 label = "Strategy 1 - run" + str(run)
-                plt.plot (k,objective_function_1, label = label)
+                plt.plot (k,objective_function, c='b', label = label)
                 plt.legend()
                 plt.show()
-
-            objective_function_1 = []
-
-
+            
+            objective_function = []
 
 if __name__ == "__main__":
     main()

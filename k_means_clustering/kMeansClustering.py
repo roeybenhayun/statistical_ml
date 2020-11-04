@@ -7,13 +7,15 @@ import math
 from tempfile import TemporaryFile
 
 class KMeansClustering:    
-    def __init__(self, dataset_path=None, dataset=None, format = None):
+    RANDOM_INIT=1
+    K_MEANS_PLUS_PLUS=2
+    def __init__(self, dataset_path=None, dataset=None, format = None, plot_dataset=False):
         self.__dataset_path = dataset_path
         self.__data_path = dataset_path
         self.__dataset = dataset 
         self.__data_file_list = [dataset_path + "/" + dataset]
         self.__print_dims = False
-        self.__plot_dataset = False
+        self.__plot_dataset = plot_dataset
         self.__plot_centroids = False
         self.__save = False
         self.__log_enabled = False
@@ -23,6 +25,8 @@ class KMeansClustering:
         self.__cluster_init_strategy = 1
         self.__k = 2
         self.__kmeans_algo_iterations = 0
+        self.__final_clusters = []
+        
 
         if (dataset_path is None):
             # assume data dir is in the current directory
@@ -115,33 +119,29 @@ class KMeansClustering:
         area = np.pi*3   
         if (format == "mat"):
             self.__data = scipy.io.loadmat (self.__data_path + "/" + self.__dataset)
-
             self.__unlabeled_data = self.__data['AllSamples']
-
-            if (self.__plot_dataset == True):                
-                self.__X1 = self.__unlabeled_data[:,[0]]
-                self.__X2 = self.__unlabeled_data[:,[1]]            
+            self.__X1 = self.__unlabeled_data[:,[0]]
+            self.__X2 = self.__unlabeled_data[:,[1]]            
+            if (self.__plot_dataset == True):                                
                 plt.scatter(self.__X1, self.__X2,s=area,c='b',alpha=0.5)              
                 plt.title(self.__dataset)
                 plt.xlabel('X1')
                 plt.ylabel('X2')       
                 plt.show()
         elif (format == "txt"):
-            print("Load text file format")
-            self.__data = np.loadtxt(self.__data_path + "/" + self.__dataset)
-            print("Text file Shape")
-            print(np.shape(self.__data))
+            self.__data = np.loadtxt(self.__data_path + "/" + self.__dataset)                        
             self.__unlabeled_data = self.__data
             self.__X1 = self.__unlabeled_data[:,[0]]
             self.__X2 = self.__unlabeled_data[:,[1]]  
-            plt.scatter(self.__X1, self.__X2,s=area,c='b',alpha=0.5)              
-            plt.title(self.__dataset)
-            plt.xlabel('X1')
-            plt.ylabel('X2')       
-            plt.show()
+            if (self.__plot_dataset == True):  
+                plt.scatter(self.__X1, self.__X2,s=area,c='b',alpha=0.5)              
+                plt.title(self.__dataset)
+                plt.xlabel('X1')
+                plt.ylabel('X2')       
+                plt.show()
 
 
-        if (self.__save == False):
+        if (self.__save == True):
             np.savetxt("data", self.__unlabeled_data,delimiter=",")
         
 
@@ -241,7 +241,7 @@ class KMeansClustering:
 
         Return
         ------
-        Objective function value     
+        None     
         """ 
         area = np.pi*3
         # @todo - remove, not needed
@@ -251,7 +251,6 @@ class KMeansClustering:
         self.init_centeriods(self.__cluster_init_strategy, self.__k)
          
         error = np.linalg.norm(self.__C - self.__C_old, axis=1, keepdims = True)
-
 
         while(error.any() != 0):
             if (plot_centroids == True):
@@ -269,22 +268,21 @@ class KMeansClustering:
 
             self.__C_old = np.copy(self.__C)
 
+            self.__final_clusters = []
+
             # get the distance from the Kth cluster center
             for k in range(0,self.__k):
                 l2_norm = np.linalg.norm(self.__unlabeled_data - self.__C[k], axis=1, keepdims = True)
                 self.__distances[:,k,None] = l2_norm
             # get in indices of the min distance fron the Kth cluster        
             self.__min_distances = np.argmin(self.__distances, axis=1)
-            sum_of_squered_distances = 0
+
             for k in range (0,self.__k):
                 cluster_index = np.where(self.__min_distances == k)
                 cluster = np.take(self.__unlabeled_data,cluster_index,axis=0)
                 
-                # Cala SSE                
-                l2_norm = np.linalg.norm(cluster[0,:,:] - self.__C[k], axis=1, keepdims = True)
+                self.__final_clusters.append(cluster)
 
-                wsse = l2_norm * l2_norm
-                sum_of_squered_distances = sum_of_squered_distances + np.sum(wsse)
                 # !!NOTE --> there are some cases when running the kmeans algo with initializaion method 2 
                 # that the INITIAL centroid list has an identical centers. e.g.
                 # [[ 1.77775261  7.21854537]
@@ -296,7 +294,7 @@ class KMeansClustering:
                 # in that case np.take will return an empty list. Since there are an identical centers, the algo
                 # skips the calculation for that point
                 if (cluster.size == 0):continue
-                # update cluster
+                # update cluster centroids
                 self.__C[k] = np.mean(cluster, axis=1)            
 
 
@@ -315,62 +313,23 @@ class KMeansClustering:
         if (self.__log_enabled == True):
             print ("Number of clusters = ", self.__k)
             print ("Number of Kmeans iterations = ", self.__kmeans_algo_iterations) 
-            print ("Sum of squared distances = ", sum_of_squered_distances)
         
-
-        self.cleanup()
-
+    def get_sse(self):
+        # raise an exception if final clusters are empty
+        # call this method once computed method has completed and the centroids have been caluculated
+        # @todo - plot final clustering
+        sum_of_squered_distances = 0
+        for k in range (0,self.__k):
+            cluster = self.__final_clusters[k]               
+            l2_norm = np.linalg.norm(cluster[0,:,:] - self.__C[k], axis=1, keepdims = True)
+            sse = l2_norm * l2_norm
+            sum_of_squered_distances = sum_of_squered_distances + np.sum(sse)                                    
         return sum_of_squered_distances
 
-
-def main():
-
-    objective_function_1 = []
-    objective_function_2 = []
-
-    kMeansClustering = KMeansClustering()
-
-
-    number_of_clusters = 10
-    number_of_runs = 1
-    k = np.arange(2,number_of_clusters+1)
-    plot_objective_function = False
-
-    if (plot_objective_function == True):
-        plt.title('Elbow Graph')
-        plt.xlabel('Number of Clusters K')
-        plt.ylabel('Objective Function Value')
-    
-
-    for run in range(1, number_of_runs+1):
-        centroid_init_strategy = 1
-        for _k in range(2,number_of_clusters+1):
-            kMeansClustering.setup(centroid_init_strategy,_k)
-            objective_function_1.append(kMeansClustering.compute())
-
-        if (plot_objective_function == False):
-            label = "Strategy 1 - run" + str(run)
-            plt.plot (k,objective_function_1, label = label)
-            plt.legend()
-            plt.show()
-
-        #centroid_init_strategy = 2
-        #for _k in range(2,number_of_clusters+1):
-        #    kMeansClustering.setup(centroid_init_strategy ,_k)
-        #    objective_function_2.append(kMeansClustering.compute())
-
-        #if (plot_objective_function == True):
-            #label = "Strategy 2 - run" + str(run)
-            #plt.plot (k,objective_function_2, label = label)
-            #plt.legend()
-            #plt.show()
-        
-        objective_function_1 = []
-        objective_function_2 = []
-    
-    if (plot_objective_function == True):
-        plt.show()
-
-
-if __name__ == "__main__":
-    main()
+    #def get_seperation(self):
+    #    seperation = 0
+    #    data_mean = np.mean(self.__unlabeled_data,axis=0)
+    #    for k in range (0,self.__k):
+    #        cluster = self.__final_clusters[k]
+    #        seperation += cluster.shape[1]* np.square(self.__C[k] - data_mean)
+    #    return seperation        
