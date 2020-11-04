@@ -145,6 +145,9 @@ class KMeansClustering:
             np.savetxt("data", self.__unlabeled_data,delimiter=",")
         
 
+    def get_dataset(self):
+        return self.__unlabeled_data
+
 
     def init_centeriods(self,cluster_init_strategy, k):
 
@@ -161,7 +164,7 @@ class KMeansClustering:
         ------
         None     
         """
-        if (cluster_init_strategy == 1):
+        if (cluster_init_strategy == KMeansClustering.RANDOM_INIT):
             if (self.__log_enabled == True):
                 print("Cluster init strategy: randomally pick the initial canters from the givan examples ")
             # get list of random index in the range of the unlabled data
@@ -170,7 +173,7 @@ class KMeansClustering:
             self.__C = self.__unlabeled_data[rand_index]
             self.__C_old = np.zeros(self.__C.shape)
             
-        elif(cluster_init_strategy == 2):
+        elif(cluster_init_strategy == KMeansClustering.K_MEANS_PLUS_PLUS):
             if (self.__log_enabled == True):
                 print("Cluster init strategy: first random. Other centers by the average of the maximal distance")
             # Pick the first center randomally
