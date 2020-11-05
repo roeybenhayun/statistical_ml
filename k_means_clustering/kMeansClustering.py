@@ -6,6 +6,10 @@ import matplotlib.pyplot as plt
 import math
 from tempfile import TemporaryFile
 
+# 1. Rename this class to kmeans
+# 2. Create another class called clustering
+# 3. Move all general purpose methods to the clustering module
+# 4. Clustering 
 class KMeansClustering:    
     RANDOM_INIT=1
     K_MEANS_PLUS_PLUS=2
@@ -104,7 +108,8 @@ class KMeansClustering:
 
         
 
-
+    # should be a general util loading function
+    # 
     def load_data(self,format):
         """
         Load the input data (e.g. the samples to be clusters)

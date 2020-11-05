@@ -41,9 +41,14 @@ datasets = {
     "name" : "s4.txt",        
     "format" : "txt"
     },
-"s4" : {
+"AllSamples" : {
     "path" : "datasets/AllSamples",
     "name" : "AllSamples.mat",        
     "format" : "mat"
+    },
+"jain" : {
+    "path" : "datasets/shape_sets",
+    "name" : "jain.txt",        
+    "format" : "txt"
     },
 }

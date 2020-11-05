@@ -2,10 +2,18 @@ import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 import numpy as np
 from kMeansClustering import KMeansClustering
-from knn_datasets import datasets
+from clustering_datasets import datasets
+from DBSCAN import DBSCAN
 
 def main():
+
+    ds = "jain"
+    dbscan = DBSCAN(datasets[ds]["path"],datasets[ds]["name"], datasets[ds]["format"],plot_dataset=True)
+
+    return
+
     dataset = "a2"
+
     one_shot = False
     calc_sse = True
     run_scikit_kmeans = False
