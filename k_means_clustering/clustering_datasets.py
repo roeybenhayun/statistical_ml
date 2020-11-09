@@ -1,5 +1,5 @@
 # Datasets source
-    # P. Fränti and S. Sieranoja
+    # P. Frati and S. Sieranoja
     # K-means properties on six clustering benchmark datasets
     # Applied Intelligence, 48 (12), 4743-4759, December 2018
     # https://doi.org/10.1007/s10489-018-1238-7

@@ -6,9 +6,13 @@ from clustering_datasets import datasets
 from DBSCAN import DBSCAN
 
 def main():
-
+        
     ds = "jain"
-    dbscan = DBSCAN(datasets[ds]["path"],datasets[ds]["name"], datasets[ds]["format"],plot_dataset=True)
+    dbscan = DBSCAN(datasets[ds]["path"],datasets[ds]["name"], datasets[ds]["format"],plot_dataset=False)
+    eps = 4
+    min_pts = 7
+    dbscan.setup(eps,min_pts)
+    dbscan.compute()
 
     return
 
